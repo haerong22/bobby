@@ -1,3 +1,5 @@
+import type { Material } from "./tiles";
+
 export type BuildingId =
   | "home"
   | "office"
@@ -21,7 +23,8 @@ export interface Building {
   h: number;
   /** 출입구의 건물 내 가로 오프셋 (타일). Phase 3 의 상호작용 존이 여기 붙는다. */
   doorOffset: number;
-  color: number;
+  /** 외벽 재질. 타일 묶음은 tiles.ts 의 MATERIALS 가 들고 있다. */
+  material: Material;
 }
 
 /**
@@ -38,7 +41,7 @@ export const BUILDINGS: readonly Building[] = [
     w: 12,
     h: 8,
     doorOffset: 6,
-    color: 0x4a6fa5,
+    material: "tan",
   },
   {
     id: "office",
@@ -49,7 +52,7 @@ export const BUILDINGS: readonly Building[] = [
     w: 12,
     h: 8,
     doorOffset: 6,
-    color: 0x5b5f97,
+    material: "gray",
   },
   {
     id: "home",
@@ -60,7 +63,7 @@ export const BUILDINGS: readonly Building[] = [
     w: 6,
     h: 6,
     doorOffset: 3,
-    color: 0x8c5a4a,
+    material: "red",
   },
   {
     id: "workshop",
@@ -71,7 +74,7 @@ export const BUILDINGS: readonly Building[] = [
     w: 7,
     h: 6,
     doorOffset: 3,
-    color: 0x7a6246,
+    material: "red",
   },
   {
     id: "press",
@@ -82,7 +85,7 @@ export const BUILDINGS: readonly Building[] = [
     w: 7,
     h: 5,
     doorOffset: 3,
-    color: 0x4f7a6a,
+    material: "gray",
   },
   {
     id: "library",
@@ -93,7 +96,7 @@ export const BUILDINGS: readonly Building[] = [
     w: 6,
     h: 5,
     doorOffset: 3,
-    color: 0x6b5080,
+    material: "tan",
   },
   {
     id: "post",
@@ -104,6 +107,6 @@ export const BUILDINGS: readonly Building[] = [
     w: 6,
     h: 5,
     doorOffset: 3,
-    color: 0xa05c5c,
+    material: "red",
   },
 ] as const;
