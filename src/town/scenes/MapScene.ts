@@ -1,23 +1,20 @@
 import Phaser from "phaser";
 
 import { BUILDINGS } from "../buildings";
-import {
-  CAMERA_ZOOM,
-  COLORS,
-  MAP_PX,
-  MAP_TILES,
-  ROADS,
-  SPAWN_TILE,
-  TILE,
-} from "../constants";
+import { CAMERA_ZOOM, SPAWN_TILE, TILE } from "../constants";
 import { Player } from "../entities/Player";
 import { EventBus } from "../EventBus";
+import { DOOR, TILESET } from "../tiles";
 
 /** 타일 좌표 → 타일 중심의 월드 픽셀 좌표 */
 const center = (tile: number, span = 1) => (tile + span / 2) * TILE;
 
+/** Tiled 의 firstgid 가 1 이므로 Phaser 의 tile.index 는 타일 인덱스 + 1 이다. */
+const DOOR_INDEX = DOOR + 1;
+
 export class MapScene extends Phaser.Scene {
   static readonly KEY = "MapScene";
+  static readonly MAP_KEY = "city-map";
 
   private player!: Player;
 
@@ -26,21 +23,39 @@ export class MapScene extends Phaser.Scene {
   }
 
   create() {
-    this.physics.world.setBounds(0, 0, MAP_PX.w, MAP_PX.h);
+    const map = this.make.tilemap({ key: MapScene.MAP_KEY });
+    const tileset = map.addTilesetImage(TILESET.name, TILESET.key);
+    if (!tileset) {
+      throw new Error(
+        `타일셋 '${TILESET.name}' 을 붙이지 못했다. .tmj 의 tileset name 과 tiles.ts 의 TILESET.name 이 어긋났는지 확인할 것.`,
+      );
+    }
 
-    this.drawGround();
-    this.drawRoads();
+    const ground = map.createLayer("ground", tileset, 0, 0);
+    const buildings = map.createLayer("buildings", tileset, 0, 0);
+    const props = map.createLayer("props", tileset, 0, 0);
+    if (!ground || !buildings || !props) {
+      throw new Error(".tmj 의 레이어 이름이 ground/buildings/props 와 어긋났다.");
+    }
 
-    this.player = new Player(
-      this,
-      center(SPAWN_TILE.x),
-      center(SPAWN_TILE.y),
-    );
+    ground.setDepth(0);
+    buildings.setDepth(1);
+    props.setDepth(2);
 
-    this.physics.add.collider(this.player, this.drawBuildings());
+    // 출입문만 밟고 설 수 있어야 하므로 충돌에서 뺀다.
+    buildings.setCollisionByExclusion([-1, DOOR_INDEX]);
+    props.setCollisionByExclusion([-1]);
+
+    this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+
+    this.player = new Player(this, center(SPAWN_TILE.x), center(SPAWN_TILE.y));
+    this.physics.add.collider(this.player, buildings);
+    this.physics.add.collider(this.player, props);
+
+    this.drawLabels();
 
     const camera = this.cameras.main;
-    camera.setBounds(0, 0, MAP_PX.w, MAP_PX.h);
+    camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     camera.setZoom(CAMERA_ZOOM);
     camera.startFollow(this.player, true, 0.12, 0.12);
     camera.roundPixels = true;
@@ -52,86 +67,24 @@ export class MapScene extends Phaser.Scene {
     this.player.update();
   }
 
-  private drawGround() {
-    this.add
-      .rectangle(0, 0, MAP_PX.w, MAP_PX.h, COLORS.ground)
-      .setOrigin(0, 0);
-
-    // 타일 격자. Phase 2 에서 Tiled 로 맵을 그릴 때 좌표를 눈으로 맞추기 위한 보조선.
-    const grid = this.add.graphics().setDepth(1);
-    grid.lineStyle(1, COLORS.grid, 1);
-    for (let x = 0; x <= MAP_TILES.w; x += 1) {
-      grid.lineBetween(x * TILE, 0, x * TILE, MAP_PX.h);
-    }
-    for (let y = 0; y <= MAP_TILES.h; y += 1) {
-      grid.lineBetween(0, y * TILE, MAP_PX.w, y * TILE);
-    }
-  }
-
-  private drawRoads() {
-    const { horizontal, vertical } = ROADS;
-    const hHeight = (horizontal.to - horizontal.from + 1) * TILE;
-    const vWidth = (vertical.to - vertical.from + 1) * TILE;
-
-    const roads = this.add.graphics().setDepth(2);
-    roads.fillStyle(COLORS.road, 1);
-    roads.fillRect(0, horizontal.from * TILE, MAP_PX.w, hHeight);
-    roads.fillRect(vertical.from * TILE, 0, vWidth, MAP_PX.h);
-
-    // 중앙선. 교차로 구간은 비워 둬야 도로처럼 읽힌다.
-    const lanes = this.add.graphics().setDepth(3);
-    lanes.fillStyle(COLORS.roadLine, 1);
-    const hMid = center(horizontal.from + 1) - 1;
-    const vMid = center(vertical.from + 1) - 1;
-    for (let x = 0; x < MAP_PX.w; x += TILE) {
-      if (x >= vertical.from * TILE && x <= vertical.to * TILE) continue;
-      lanes.fillRect(x + 4, hMid, TILE - 8, 2);
-    }
-    for (let y = 0; y < MAP_PX.h; y += TILE) {
-      if (y >= horizontal.from * TILE && y <= horizontal.to * TILE) continue;
-      lanes.fillRect(vMid, y + 4, 2, TILE - 8);
-    }
-  }
-
-  /** 건물을 그리고 충돌체로 쓸 사각형들을 돌려준다. */
-  private drawBuildings() {
-    return BUILDINGS.map((building) => {
-      const body = this.add
-        .rectangle(
-          center(building.x, building.w),
-          center(building.y, building.h),
-          building.w * TILE,
-          building.h * TILE,
-          building.color,
-        )
-        .setDepth(4)
-        .setStrokeStyle(1, COLORS.playerOutline);
-
-      this.physics.add.existing(body, true);
-
-      // 출입구. Phase 3 에서 이 자리에 상호작용 존이 붙는다.
-      this.add
-        .rectangle(
-          center(building.x + building.doorOffset),
-          (building.y + building.h) * TILE - TILE / 2,
-          TILE - 4,
-          TILE - 4,
-          COLORS.door,
-        )
-        .setDepth(5);
-
+  /** 건물 이름. 실제 간판 스프라이트가 생기면 이 자리를 대체한다. */
+  private drawLabels() {
+    for (const building of BUILDINGS) {
       this.add
         .text(
           center(building.x, building.w),
-          building.y * TILE + 6,
+          (building.y + building.h - 3) * TILE - 9,
           building.label,
-          { fontSize: "8px", color: "#f4f6fb" },
+          {
+            fontSize: "8px",
+            color: "#f4f6fb",
+            backgroundColor: "#1b1e26cc",
+            padding: { x: 2, y: 1 },
+          },
         )
         .setOrigin(0.5, 0)
         .setResolution(CAMERA_ZOOM * 2)
         .setDepth(6);
-
-      return body;
-    });
+    }
   }
 }
