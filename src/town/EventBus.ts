@@ -9,8 +9,14 @@ import type { BuildingId } from "./buildings";
  */
 export type TownEventMap = {
   "game:ready": { scene: string };
-  "building:enter": { id: BuildingId };
-  "building:leave": { id: BuildingId };
+  /** 출입문 앞 칸에 들어섰다 / 벗어났다. 진입 프롬프트를 띄우는 신호. */
+  "door:near": { id: BuildingId };
+  "door:away": { id: BuildingId };
+  /** 문 앞에서 Space 를 눌렀다. React 가 모달을 연다. */
+  "building:open": { id: BuildingId };
+  /** 모달이 열려 게임 입력을 끊어야 한다 / 닫혀 되돌려야 한다. */
+  "game:pause": { reason: string };
+  "game:resume": { reason: string };
 };
 
 type Handler<T> = (payload: T) => void;

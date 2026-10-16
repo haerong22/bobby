@@ -110,3 +110,14 @@ export const BUILDINGS: readonly Building[] = [
     material: "red",
   },
 ] as const;
+
+export function buildingById(id: BuildingId): Building {
+  const found = BUILDINGS.find((building) => building.id === id);
+  if (!found) throw new Error(`알 수 없는 건물 id: ${id}`);
+  return found;
+}
+
+/** 출입문이 놓인 타일 좌표. 상호작용 판정과 맵 생성이 같은 식을 써야 한다. */
+export function doorTile(building: Building) {
+  return { x: building.x + building.doorOffset, y: building.y + building.h - 1 };
+}

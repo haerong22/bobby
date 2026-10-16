@@ -51,6 +51,11 @@ export class Player extends Phaser.GameObjects.Rectangle {
     return this.facing;
   }
 
+  /** 모달이 열린 동안 호출한다. 멈추지 않으면 마지막 속도로 계속 미끄러진다. */
+  halt() {
+    this.arcadeBody.setVelocity(0, 0);
+  }
+
   update() {
     let x = 0;
     let y = 0;

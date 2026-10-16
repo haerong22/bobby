@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { BUILDINGS } from "../src/town/buildings.ts";
+import { BUILDINGS, doorTile } from "../src/town/buildings.ts";
 import { MAP_TILES, ROADS } from "../src/town/constants.ts";
 import { DOOR, GLASS, GROUND, MATERIALS, PROPS, TILESET } from "../src/town/tiles.ts";
 
@@ -81,6 +81,8 @@ for (const b of BUILDINGS) {
   const mat = MATERIALS[b.material];
   // 아래 3줄이 카메라를 향한 외벽, 나머지 위쪽은 지붕.
   const facadeTop = b.h - 3;
+  // 상호작용 판정과 같은 식을 써야 문과 존이 어긋나지 않는다.
+  const door = doorTile(b);
 
   for (let ty = 0; ty < b.h; ty += 1) {
     for (let tx = 0; tx < b.w; tx += 1) {
@@ -90,7 +92,7 @@ for (const b of BUILDINGS) {
       if (ty < facadeTop) {
         put(buildings, x, y, mat.roof);
       } else if (ty === b.h - 1) {
-        if (tx === b.doorOffset) put(buildings, x, y, DOOR);
+        if (x === door.x && y === door.y) put(buildings, x, y, DOOR);
         else if (tx % 3 === 1) put(buildings, x, y, GLASS);
         else put(buildings, x, y, mat.wall);
       } else {
