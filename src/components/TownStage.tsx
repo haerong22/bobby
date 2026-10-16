@@ -1,10 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
+
+import BuildingPanel from "./BuildingPanel";
+import DialogueBox from "./DialogueBox";
+import type { BuildingId } from "@/town/buildings";
+import { buildingById } from "@/town/buildings";
+import { EventBus } from "@/town/EventBus";
 
 /**
  * `ssr: false` 는 클라이언트 컴포넌트 안에서만 쓸 수 있다. 그래서 page.tsx
- * (서버 컴포넌트)가 metadata 를 들고 있게 두고, 이 얇은 래퍼가 Phaser 를 받는다.
+ * (서버 컴포넌트)가 metadata 를 들고 있게 두고, 이 래퍼가 Phaser 를 받는다.
  */
 const GameCanvas = dynamic(() => import("./GameCanvas"), {
   ssr: false,
@@ -16,12 +23,52 @@ const GameCanvas = dynamic(() => import("./GameCanvas"), {
 });
 
 export default function TownStage() {
+  const [nearId, setNearId] = useState<BuildingId | null>(null);
+  const [openId, setOpenId] = useState<BuildingId | null>(null);
+
+  useEffect(() => {
+    const offNear = EventBus.on("door:near", ({ id }) => setNearId(id));
+    const offAway = EventBus.on("door:away", () => setNearId(null));
+    const offOpen = EventBus.on("building:open", ({ id }) => {
+      setOpenId(id);
+      EventBus.emit("game:pause", { reason: "building-panel" });
+      // router.push 를 쓰면 라우트가 바뀌면서 Phaser 캔버스가 통째로 언마운트된다.
+      // App Router 가 지원하는 shallow 갱신으로 주소만 바꾼다.
+      window.history.pushState(null, "", buildingById(id).route);
+    });
+    return () => {
+      offNear();
+      offAway();
+      offOpen();
+    };
+  }, []);
+
+  // 모달을 열 때 히스토리를 한 칸 쌓으므로 뒤로가기가 곧 닫기다.
+  useEffect(() => {
+    const onPop = () => {
+      setOpenId(null);
+      EventBus.emit("game:resume", { reason: "popstate" });
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const close = useCallback(() => {
+    window.history.back();
+  }, []);
+
   return (
     <main>
       <GameCanvas />
-      <p className="pointer-events-none fixed bottom-3 left-1/2 -translate-x-1/2 text-xs text-neutral-500">
-        방향키 또는 WASD 로 이동
-      </p>
+      <DialogueBox label={openId ? null : nearId && buildingById(nearId).label} />
+      {openId && (
+        <BuildingPanel building={buildingById(openId)} onClose={close} />
+      )}
+      {!openId && !nearId && (
+        <p className="pointer-events-none fixed bottom-3 left-1/2 -translate-x-1/2 text-xs text-neutral-500">
+          방향키 또는 WASD 로 이동
+        </p>
+      )}
     </main>
   );
 }
