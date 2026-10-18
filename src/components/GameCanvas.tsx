@@ -16,14 +16,27 @@ export default function GameCanvas() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const host = hostRef.current;
     // StrictMode 는 개발 중 effect 를 두 번 실행한다. 이 가드가 없으면
     // Phaser.Game 이 두 개 생성되고 캔버스도 두 개 뜬다.
-    if (!hostRef.current || gameRef.current) return;
+    if (!host || gameRef.current) return;
 
-    gameRef.current = new Phaser.Game(createGameConfig(hostRef.current));
+    const game = new Phaser.Game(createGameConfig(host));
+    gameRef.current = game;
+
+    // Scale.RESIZE 가 부모 크기를 제때 못 잡으면 캔버스가 초기 크기로 남고
+    // 그 바깥이 배경색으로 비친다. 부모를 직접 관찰해 강제로 맞춘다.
+    const observer = new ResizeObserver(() => {
+      const { clientWidth, clientHeight } = host;
+      if (clientWidth > 0 && clientHeight > 0) {
+        game.scale.resize(clientWidth, clientHeight);
+      }
+    });
+    observer.observe(host);
 
     return () => {
-      gameRef.current?.destroy(true);
+      observer.disconnect();
+      game.destroy(true);
       gameRef.current = null;
       // EventBus 를 비우지 않는다. StrictMode 가 이 effect 를 두 번 돌릴 때
       // 먼저 마운트된 React 쪽 구독까지 지워버리고, 그쪽 effect 는 다시 돌지

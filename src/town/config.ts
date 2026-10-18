@@ -19,8 +19,11 @@ export function createGameConfig(
     roundPixels: true,
     antialias: false,
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      // FIT 은 캔버스를 통째로 늘려서, 모니터가 클수록 확대돼 보이고
+      // 보이는 마을 범위는 그대로였다. RESIZE 는 캔버스를 창과 1:1 로 두므로
+      // 화면이 넓어지면 마을이 더 많이 보인다. 확대 정도는 카메라 zoom 이 정한다.
+      mode: Phaser.Scale.RESIZE,
+      autoCenter: Phaser.Scale.NO_CENTER,
     },
     physics: {
       default: "arcade",

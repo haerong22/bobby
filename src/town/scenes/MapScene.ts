@@ -2,7 +2,13 @@ import Phaser from "phaser";
 
 import type { BuildingId } from "../buildings";
 import { BUILDINGS, doorTile } from "../buildings";
-import { CAMERA_ZOOM, SPAWN_TILE, TILE } from "../constants";
+import {
+  SPAWN_TILE,
+  TEXT_RESOLUTION,
+  TILE,
+  ZOOM,
+  ZOOM_STORAGE_KEY,
+} from "../constants";
 import { Player } from "../entities/Player";
 import { EventBus } from "../EventBus";
 import { DOOR, TILESET } from "../tiles";
@@ -21,6 +27,7 @@ export class MapScene extends Phaser.Scene {
   private marker!: Phaser.GameObjects.Text;
   private nearDoor: BuildingId | null = null;
   private paused = false;
+  private mapSize = { w: 0, h: 0 };
 
   constructor() {
     super(MapScene.KEY);
@@ -50,6 +57,7 @@ export class MapScene extends Phaser.Scene {
     buildings.setCollisionByExclusion([-1, DOOR_INDEX]);
     props.setCollisionByExclusion([-1]);
 
+    this.mapSize = { w: map.widthInPixels, h: map.heightInPixels };
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
     this.player = new Player(this, center(SPAWN_TILE.x), center(SPAWN_TILE.y));
@@ -61,17 +69,26 @@ export class MapScene extends Phaser.Scene {
 
     const camera = this.cameras.main;
     camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
-    camera.setZoom(CAMERA_ZOOM);
+    camera.setZoom(this.loadZoom());
     camera.startFollow(this.player, true, 0.12, 0.12);
     camera.roundPixels = true;
 
+    // Scale.RESIZE 는 캔버스만 늘리고 카메라 뷰포트는 초기 크기로 둔다.
+    // 맞춰 주지 않으면 캔버스 나머지가 검게 남는다.
+    this.fitCameraToCanvas();
+    const onResize = () => this.fitCameraToCanvas();
+    this.scale.on(Phaser.Scale.Events.RESIZE, onResize);
+
     this.input.keyboard?.on("keydown-SPACE", this.enterBuilding, this);
+    this.input.keyboard?.on("keydown-MINUS", () => this.nudgeZoom(-1));
+    this.input.keyboard?.on("keydown-PLUS", () => this.nudgeZoom(1));
 
     const offPause = EventBus.on("game:pause", () => this.setPaused(true));
     const offResume = EventBus.on("game:resume", () => this.setPaused(false));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       offPause();
       offResume();
+      this.scale.off(Phaser.Scale.Events.RESIZE, onResize);
     });
 
     EventBus.emit("game:ready", { scene: MapScene.KEY });
@@ -84,6 +101,52 @@ export class MapScene extends Phaser.Scene {
     }
     this.player.update();
     this.syncNearestDoor();
+  }
+
+  private fitCameraToCanvas() {
+    const camera = this.cameras.main;
+    camera.setSize(this.scale.width, this.scale.height);
+    // 창이 커지면 허용 최소 배율도 올라간다. 다시 눌러 맞추지 않으면
+    // 카메라 바운드에 걸려 가장자리가 검게 남는다.
+    camera.setZoom(this.clampZoom(camera.zoom));
+  }
+
+  /**
+   * 맵이 화면을 덮는 최소 배율. 이보다 낮추면 카메라 바운드 밖이 비어 검게 보인다.
+   * 픽셀아트라 정수 배율만 쓰므로 올림한다.
+   */
+  private minZoom() {
+    const needed = Math.max(
+      this.scale.width / this.mapSize.w,
+      this.scale.height / this.mapSize.h,
+    );
+    return Math.min(ZOOM.max, Math.max(ZOOM.min, Math.ceil(needed)));
+  }
+
+  private clampZoom(zoom: number) {
+    return Phaser.Math.Clamp(zoom, this.minZoom(), ZOOM.max);
+  }
+
+  /** 저장된 배율을 읽는다. 값이 깨져 있어도 기본값으로 떨어지게 한다. */
+  private loadZoom() {
+    const stored = Number(
+      globalThis.localStorage?.getItem(ZOOM_STORAGE_KEY) ?? "",
+    );
+    const wanted =
+      Number.isInteger(stored) && stored >= ZOOM.min && stored <= ZOOM.max
+        ? stored
+        : ZOOM.default;
+    return this.clampZoom(wanted);
+  }
+
+  private nudgeZoom(step: number) {
+    if (this.paused) return;
+    const camera = this.cameras.main;
+    const next = this.clampZoom(camera.zoom + step);
+    if (next === camera.zoom) return;
+
+    camera.setZoom(next);
+    globalThis.localStorage?.setItem(ZOOM_STORAGE_KEY, String(next));
   }
 
   private setPaused(paused: boolean) {
@@ -138,7 +201,7 @@ export class MapScene extends Phaser.Scene {
         padding: { x: 3, y: 1 },
       })
       .setOrigin(0.5, 1)
-      .setResolution(CAMERA_ZOOM * 2)
+      .setResolution(TEXT_RESOLUTION)
       .setDepth(7)
       .setVisible(false);
   }
@@ -159,7 +222,7 @@ export class MapScene extends Phaser.Scene {
           },
         )
         .setOrigin(0.5, 0)
-        .setResolution(CAMERA_ZOOM * 2)
+        .setResolution(TEXT_RESOLUTION)
         .setDepth(6);
     }
   }

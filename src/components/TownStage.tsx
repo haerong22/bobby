@@ -67,6 +67,10 @@ export default function TownStage() {
       {!openId && !nearId && (
         <p className="pointer-events-none fixed bottom-3 left-1/2 -translate-x-1/2 text-xs text-neutral-500">
           방향키 또는 WASD 로 이동
+          <span className="mx-2 text-neutral-700">·</span>
+          <kbd className="rounded bg-neutral-800 px-1 py-0.5">-</kbd>
+          <kbd className="ml-1 rounded bg-neutral-800 px-1 py-0.5">=</kbd> 로
+          화면 배율
         </p>
       )}
     </main>
