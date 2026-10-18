@@ -25,7 +25,9 @@ export default function GameCanvas() {
     return () => {
       gameRef.current?.destroy(true);
       gameRef.current = null;
-      EventBus.clear();
+      // EventBus 를 비우지 않는다. StrictMode 가 이 effect 를 두 번 돌릴 때
+      // 먼저 마운트된 React 쪽 구독까지 지워버리고, 그쪽 effect 는 다시 돌지
+      // 않아 구독이 영영 사라진다. 씬과 컴포넌트가 각자 자기 것만 해제한다.
     };
   }, []);
 

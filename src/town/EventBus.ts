@@ -57,11 +57,6 @@ class TownEventBus {
       | undefined;
     set?.forEach((handler) => handler(payload));
   }
-
-  /** 씬을 destroy 할 때 구독이 남지 않도록 비운다. */
-  clear() {
-    this.handlers.clear();
-  }
 }
 
 export const EventBus = new TownEventBus();
