@@ -10,7 +10,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BUILDINGS, doorTile } from "../src/town/buildings.ts";
-import { MAP_TILES, ROADS } from "../src/town/constants.ts";
+import { MAP_TILES, PARKS, ROADS } from "../src/town/constants.ts";
 import { DOOR, GLASS, GROUND, MATERIALS, PROPS, TILESET } from "../src/town/tiles.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -28,9 +28,12 @@ const put = (data: number[], x: number, y: number, index: number) => {
   data[y * W + x] = gid(index);
 };
 
+type Band = { readonly from: number; readonly to: number };
+const within = (bands: readonly Band[], v: number) =>
+  bands.some((band) => v >= band.from && v <= band.to);
+
 const onRoad = (x: number, y: number) =>
-  (y >= ROADS.horizontal.from && y <= ROADS.horizontal.to) ||
-  (x >= ROADS.vertical.from && x <= ROADS.vertical.to);
+  within(ROADS.horizontal, y) || within(ROADS.vertical, x);
 
 // ── ground ──────────────────────────────────────────────────────────────
 const ground = layer(gid(GROUND.sidewalk));
@@ -42,32 +45,33 @@ for (let y = 0; y < H; y += 1) {
 }
 
 // 차선. 교차로 구간은 비워 둬야 도로처럼 읽힌다.
-const hMid = ROADS.horizontal.from + 1;
-const vMid = ROADS.vertical.from + 1;
-for (let x = 0; x < W; x += 1) {
-  if (x >= ROADS.vertical.from && x <= ROADS.vertical.to) continue;
-  put(ground, x, hMid, GROUND.roadLineH);
+for (const band of ROADS.horizontal) {
+  for (let x = 0; x < W; x += 1) {
+    if (within(ROADS.vertical, x)) continue;
+    put(ground, x, band.from + 1, GROUND.roadLineH);
+  }
 }
-for (let y = 0; y < H; y += 1) {
-  if (y >= ROADS.horizontal.from && y <= ROADS.horizontal.to) continue;
-  put(ground, vMid, y, GROUND.roadDashV);
-}
-
-// 교차로 네 변의 횡단보도.
-for (let y = ROADS.horizontal.from; y <= ROADS.horizontal.to; y += 1) {
-  put(ground, ROADS.vertical.from - 2, y, GROUND.crosswalkV);
-  put(ground, ROADS.vertical.to + 2, y, GROUND.crosswalkV);
-}
-for (let x = ROADS.vertical.from; x <= ROADS.vertical.to; x += 1) {
-  put(ground, x, ROADS.horizontal.from - 2, GROUND.crosswalkH);
-  put(ground, x, ROADS.horizontal.to + 2, GROUND.crosswalkH);
+for (const band of ROADS.vertical) {
+  for (let y = 0; y < H; y += 1) {
+    if (within(ROADS.horizontal, y)) continue;
+    put(ground, band.from + 1, y, GROUND.roadDashV);
+  }
 }
 
-// 공원 두 곳. 블록의 빈 구석을 잔디로 덮는다.
-const PARKS = [
-  { x: 2, y: 25, w: 7, h: 4 },
-  { x: 21, y: 24, w: 5, h: 5 },
-] as const;
+// 교차로마다 네 변에 횡단보도.
+for (const h of ROADS.horizontal) {
+  for (const v of ROADS.vertical) {
+    for (let y = h.from; y <= h.to; y += 1) {
+      put(ground, v.from - 2, y, GROUND.crosswalkV);
+      put(ground, v.to + 2, y, GROUND.crosswalkV);
+    }
+    for (let x = v.from; x <= v.to; x += 1) {
+      put(ground, x, h.from - 2, GROUND.crosswalkH);
+      put(ground, x, h.to + 2, GROUND.crosswalkH);
+    }
+  }
+}
+
 for (const park of PARKS) {
   for (let y = park.y; y < park.y + park.h; y += 1) {
     for (let x = park.x; x < park.x + park.w; x += 1) put(ground, x, y, GROUND.grass);
@@ -105,21 +109,40 @@ for (const b of BUILDINGS) {
 // ── props ───────────────────────────────────────────────────────────────
 const props = layer(EMPTY);
 
+/**
+ * 좌표 기반 결정적 난수. `(x + y) % n` 같은 식은 대각선 줄무늬를 만들어
+ * 심어 놓은 티가 난다. 시드가 좌표뿐이라 돌릴 때마다 같은 맵이 나온다.
+ */
+const noise = (x: number, y: number) => {
+  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+};
+
 for (const park of PARKS) {
   for (let y = park.y; y < park.y + park.h; y += 1) {
     for (let x = park.x; x < park.x + park.w; x += 1) {
-      const edge = x === park.x || y === park.y;
-      if (edge && (x + y) % 2 === 0) put(props, x, y, PROPS.bush);
-      else if ((x + y) % 5 === 0) put(props, x, y, PROPS.tree);
+      const value = noise(x, y);
+      if (value > 0.8) put(props, x, y, PROPS.tree);
+      else if (value < 0.12) put(props, x, y, PROPS.bush);
     }
   }
 }
 
-// 인도 가로수. 도로에 접한 보도 한 줄에 일정 간격으로.
-for (let x = 0; x < W; x += 3) {
-  if (x >= ROADS.vertical.from - 1 && x <= ROADS.vertical.to + 1) continue;
-  put(props, x, ROADS.horizontal.from - 1, PROPS.tree);
-  put(props, x, ROADS.horizontal.to + 1, PROPS.tree);
+// 인도 가로수. 도로에 접한 보도 한 줄에 네 칸 간격으로.
+const STREET_TREE_STEP = 4;
+for (const band of ROADS.horizontal) {
+  for (let x = 1; x < W; x += STREET_TREE_STEP) {
+    if (ROADS.vertical.some((v) => x >= v.from - 1 && x <= v.to + 1)) continue;
+    put(props, x, band.from - 1, PROPS.tree);
+    put(props, x, band.to + 1, PROPS.tree);
+  }
+}
+for (const band of ROADS.vertical) {
+  for (let y = 1; y < H; y += STREET_TREE_STEP) {
+    if (ROADS.horizontal.some((h) => y >= h.from - 1 && y <= h.to + 1)) continue;
+    put(props, band.from - 1, y, PROPS.tree);
+    put(props, band.to + 1, y, PROPS.tree);
+  }
 }
 
 // 건물 위에 가로수가 겹치지 않게 정리한다.

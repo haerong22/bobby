@@ -1,8 +1,14 @@
 /** 타일 한 변의 픽셀 수. 에셋을 16px 타일셋으로 맞춘다. */
 export const TILE = 16;
 
-/** 마을 크기 (타일 단위) */
-export const MAP_TILES = { w: 40, h: 30 } as const;
+/**
+ * 마을 크기 (타일 단위).
+ *
+ * 64x40 = 1024x640px. 배율 2 면 2048x1280 이라 1920x1080 화면도 덮는다.
+ * 맵이 화면보다 작으면 카메라 바운드에 걸려 가장자리가 검게 남으므로,
+ * 맵 크기는 "가장 낮게 허용할 배율 × 가장 큰 화면" 을 넘겨야 한다.
+ */
+export const MAP_TILES = { w: 64, h: 40 } as const;
 
 /** 마을 크기 (월드 픽셀) */
 export const MAP_PX = {
@@ -28,14 +34,29 @@ export const TEXT_RESOLUTION = ZOOM.max;
 export const PLAYER_SIZE = { w: 10, h: 12 } as const;
 export const PLAYER_SPEED = 80;
 
-/** 도시 간선도로 (타일 단위, 끝 포함) */
+/**
+ * 도시 간선도로 (타일 단위, 끝 포함). 가로 2 · 세로 2 가 맵을 9 블록으로 가른다.
+ */
 export const ROADS = {
-  horizontal: { from: 13, to: 15 },
-  vertical: { from: 18, to: 20 },
+  horizontal: [
+    { from: 12, to: 14 },
+    { from: 27, to: 29 },
+  ],
+  vertical: [
+    { from: 14, to: 16 },
+    { from: 44, to: 46 },
+  ],
 } as const;
 
-/** 시작 지점 — 집 앞 (타일 단위) */
-export const SPAWN_TILE = { x: 5, y: 24 } as const;
+/** 공원. 건물이 없는 블록을 잔디로 채운다. */
+export const PARKS = [
+  { x: 2, y: 2, w: 10, h: 8 },
+  { x: 20, y: 31, w: 12, h: 7 },
+  { x: 50, y: 31, w: 10, h: 7 },
+] as const;
+
+/** 시작 지점 — 집 문 앞 (타일 단위) */
+export const SPAWN_TILE = { x: 6, y: 24 } as const;
 
 export const COLORS = {
   ground: 0x1b1e26,
