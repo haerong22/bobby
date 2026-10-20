@@ -1,0 +1,17 @@
+[
+  {
+    "label": "이메일",
+    "value": "woojin@durucooperation.com",
+    "url": "mailto:woojin@durucooperation.com"
+  },
+  {
+    "label": "GitHub",
+    "value": "haerong22",
+    "url": "https://github.com/haerong22"
+  },
+  {
+    "label": "LinkedIn",
+    "value": "주소를 적어주세요",
+    "url": null
+  }
+]
