@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import SectionContent from "@/components/sections";
 import { BUILDINGS } from "@/town/buildings";
 
 /**
@@ -36,11 +37,12 @@ export default async function SectionPage({ params }: PageProps<"/[section]">) {
       </nav>
 
       <h1 className="text-3xl font-semibold">{building.label}</h1>
-      <p className="mt-4 text-sm leading-relaxed text-neutral-400">
-        아직 내용이 없습니다. Phase 4 에서 채웁니다.
-      </p>
 
-      <ul className="mt-12 flex flex-wrap gap-x-4 gap-y-2 border-t border-neutral-800 pt-6 text-sm">
+      <div className="mt-8">
+        <SectionContent id={building.id} />
+      </div>
+
+      <ul className="mt-16 flex flex-wrap gap-x-4 gap-y-2 border-t border-neutral-800 pt-6 text-sm">
         {BUILDINGS.filter((other) => other.id !== building.id).map((other) => (
           <li key={other.id}>
             <Link href={other.route} className="text-neutral-500 hover:text-neutral-200">

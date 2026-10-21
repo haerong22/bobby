@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
+import SectionContent from "./sections";
 import type { Building } from "@/town/buildings";
 
 type Props = {
@@ -55,11 +56,9 @@ export default function BuildingPanel({ building, onClose }: Props) {
           </button>
         </header>
 
-        <p className="text-sm leading-relaxed text-neutral-400">
-          아직 내용이 없습니다. Phase 4 에서 채웁니다.
-        </p>
+        <SectionContent id={building.id} />
 
-        <footer className="mt-6 text-xs text-neutral-500">
+        <footer className="mt-8 border-t border-neutral-800 pt-4 text-xs text-neutral-500">
           <kbd className="rounded bg-neutral-800 px-1.5 py-0.5">Esc</kbd> 또는
           뒤로가기로 닫힙니다.
         </footer>
