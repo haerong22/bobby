@@ -1,0 +1,12 @@
+player.png
+
+  "Cozy Town Lite" by Spaceyyy
+  https://aquumgifts.itch.io
+  License: Creative Commons Attribution 4.0 (CC-BY 4.0)
+  https://creativecommons.org/licenses/by/4.0/
+
+  CC-BY 는 출처 표기가 의무다. 사이트에도 표기를 남겨 둘 것
+  (src/app/[section]/page.tsx 푸터).
+
+  원본 프레임: 16 x 24, 6 열 x 8 행
+  행 순서: idle down/left/right/up, walk down/left/right/up
