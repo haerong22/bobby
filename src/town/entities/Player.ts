@@ -1,28 +1,34 @@
 import Phaser from "phaser";
 
-import { COLORS, PLAYER_SIZE, PLAYER_SPEED } from "../constants";
+import { PLAYER_SPEED, TILE } from "../constants";
+import type { Facing } from "../sprites";
+import { animKey, IDLE_DOWN_FRAME, PLAYER_SPRITE } from "../sprites";
 
-type Direction = "up" | "down" | "left" | "right";
+type Direction = Facing;
 
 /**
- * Phase 1 플레이스홀더. 스프라이트 시트가 들어오면 Rectangle 대신
- * Phaser.Physics.Arcade.Sprite 로 바꾸고 4 방향 walk 애니메이션을 붙인다.
+ * 스프라이트는 16x24 지만 충돌체는 발밑 작은 사각형이다. 전신을 충돌체로 쓰면
+ * 머리가 벽에 닿아 멈춰서, 탑다운에서 몸이 건물에 겹쳐 보이는 느낌이 사라진다.
  */
-export class Player extends Phaser.GameObjects.Rectangle {
+const BODY = { w: 8, h: 6, offsetX: 4, offsetY: 17 } as const;
+
+export class Player extends Phaser.Physics.Arcade.Sprite {
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd?: Record<Direction, Phaser.Input.Keyboard.Key>;
-  /** 스프라이트 교체 시 바로 애니메이션 키로 쓰기 위해 들고 있는다. */
   private facing: Direction = "down";
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, PLAYER_SIZE.w, PLAYER_SIZE.h, COLORS.player);
+    super(scene, x, y, PLAYER_SPRITE.key, IDLE_DOWN_FRAME);
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
     this.setDepth(10);
-    this.setStrokeStyle(1, COLORS.playerOutline);
+    this.arcadeBody
+      .setSize(BODY.w, BODY.h)
+      .setOffset(BODY.offsetX, BODY.offsetY);
     this.arcadeBody.setCollideWorldBounds(true);
+    this.play(animKey("idle", "down"));
 
     const keyboard = scene.input.keyboard;
     if (keyboard) {
@@ -51,9 +57,22 @@ export class Player extends Phaser.GameObjects.Rectangle {
     return this.facing;
   }
 
+  /**
+   * 발이 딛고 선 타일. 상호작용 판정은 이 값을 써야 한다 — 스프라이트 원점은
+   * 몸 가운데라서 `y / TILE` 로는 한 칸 위를 가리킨다.
+   */
+  get footTile() {
+    const body = this.arcadeBody;
+    return {
+      x: Math.floor((body.x + body.width / 2) / TILE),
+      y: Math.floor((body.y + body.height / 2) / TILE),
+    };
+  }
+
   /** 모달이 열린 동안 호출한다. 멈추지 않으면 마지막 속도로 계속 미끄러진다. */
   halt() {
     this.arcadeBody.setVelocity(0, 0);
+    this.play(animKey("idle", this.facing), true);
   }
 
   update() {
@@ -76,5 +95,8 @@ export class Player extends Phaser.GameObjects.Rectangle {
     else if (y > 0) this.facing = "down";
     else if (x < 0) this.facing = "left";
     else if (x > 0) this.facing = "right";
+
+    const moving = x !== 0 || y !== 0;
+    this.play(animKey(moving ? "walk" : "idle", this.facing), true);
   }
 }

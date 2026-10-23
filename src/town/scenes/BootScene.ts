@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { COLORS } from "../constants";
+import { createPlayerAnimations, PLAYER_SPRITE } from "../sprites";
 import { TILESET } from "../tiles";
 import { MapScene } from "./MapScene";
 
@@ -15,9 +16,14 @@ export class BootScene extends Phaser.Scene {
     this.drawProgress();
     this.load.image(TILESET.key, TILESET.image);
     this.load.tilemapTiledJSON(MapScene.MAP_KEY, "/town/maps/city.tmj");
+    this.load.spritesheet(PLAYER_SPRITE.key, PLAYER_SPRITE.path, {
+      frameWidth: PLAYER_SPRITE.frameWidth,
+      frameHeight: PLAYER_SPRITE.frameHeight,
+    });
   }
 
   create() {
+    createPlayerAnimations(this);
     this.scene.start(MapScene.KEY);
   }
 

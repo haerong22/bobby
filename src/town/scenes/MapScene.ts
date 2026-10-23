@@ -167,8 +167,8 @@ export class MapScene extends Phaser.Scene {
 
   /** 플레이어가 선 칸이 어느 출입문 앞인지 보고 들어갈 때/나올 때만 알린다. */
   private syncNearestDoor() {
-    const tx = Math.floor(this.player.x / TILE);
-    const ty = Math.floor(this.player.y / TILE);
+    // 스프라이트 원점은 몸 가운데라 발이 딛은 칸을 따로 물어봐야 한다.
+    const { x: tx, y: ty } = this.player.footTile;
 
     const hit = BUILDINGS.find((building) => {
       const door = doorTile(building);
