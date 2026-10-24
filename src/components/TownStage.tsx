@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import BuildingPanel from "./BuildingPanel";
 import DialogueBox from "./DialogueBox";
+import ExploreProgress from "./ExploreProgress";
 import TouchControls from "./TouchControls";
 import { useCoarsePointer } from "./useCoarsePointer";
 import type { BuildingId } from "@/town/buildings";
@@ -65,6 +66,7 @@ export default function TownStage() {
   return (
     <main>
       <GameCanvas />
+      <ExploreProgress />
 
       {/* 터치에서는 하단을 D-pad 가 쓰므로 프롬프트를 띄우지 않는다 —
           대신 입장 버튼이 활성화되는 것으로 알린다. */}
