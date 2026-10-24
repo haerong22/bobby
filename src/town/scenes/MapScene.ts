@@ -85,9 +85,11 @@ export class MapScene extends Phaser.Scene {
 
     const offPause = EventBus.on("game:pause", () => this.setPaused(true));
     const offResume = EventBus.on("game:resume", () => this.setPaused(false));
+    const offInteract = EventBus.on("game:interact", () => this.enterBuilding());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       offPause();
       offResume();
+      offInteract();
       this.scale.off(Phaser.Scale.Events.RESIZE, onResize);
     });
 
@@ -99,6 +101,7 @@ export class MapScene extends Phaser.Scene {
       this.player.halt();
       return;
     }
+
     this.player.update();
     this.syncNearestDoor();
   }

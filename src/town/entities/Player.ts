@@ -3,6 +3,7 @@ import Phaser from "phaser";
 import { PLAYER_SPEED, TILE } from "../constants";
 import type { Facing } from "../sprites";
 import { animKey, IDLE_DOWN_FRAME, PLAYER_SPRITE } from "../sprites";
+import { readTouchAxis } from "../touchInput";
 
 type Direction = Facing;
 
@@ -76,8 +77,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   update() {
-    let x = 0;
-    let y = 0;
+    const touch = readTouchAxis();
+    let x = touch.x;
+    let y = touch.y;
 
     if (this.held("left")) x -= 1;
     if (this.held("right")) x += 1;

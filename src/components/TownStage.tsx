@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import BuildingPanel from "./BuildingPanel";
 import DialogueBox from "./DialogueBox";
+import TouchControls from "./TouchControls";
+import { useCoarsePointer } from "./useCoarsePointer";
 import type { BuildingId } from "@/town/buildings";
 import { buildingById } from "@/town/buildings";
 import { EventBus } from "@/town/EventBus";
@@ -25,6 +27,7 @@ const GameCanvas = dynamic(() => import("./GameCanvas"), {
 export default function TownStage() {
   const [nearId, setNearId] = useState<BuildingId | null>(null);
   const [openId, setOpenId] = useState<BuildingId | null>(null);
+  const touch = useCoarsePointer();
 
   useEffect(() => {
     const offNear = EventBus.on("door:near", ({ id }) => setNearId(id));
@@ -57,14 +60,23 @@ export default function TownStage() {
     window.history.back();
   }, []);
 
+  const nearLabel = nearId ? buildingById(nearId).label : null;
+
   return (
     <main>
       <GameCanvas />
-      <DialogueBox label={openId ? null : nearId && buildingById(nearId).label} />
+
+      {/* 터치에서는 하단을 D-pad 가 쓰므로 프롬프트를 띄우지 않는다 —
+          대신 입장 버튼이 활성화되는 것으로 알린다. */}
+      {!touch && <DialogueBox label={openId ? null : nearLabel} />}
+
+      {touch && !openId && <TouchControls canEnter={nearId !== null} />}
+
       {openId && (
         <BuildingPanel building={buildingById(openId)} onClose={close} />
       )}
-      {!openId && !nearId && (
+
+      {!touch && !openId && !nearId && (
         <p className="pointer-events-none fixed bottom-3 left-1/2 -translate-x-1/2 text-xs text-neutral-500">
           방향키 또는 WASD 로 이동
           <span className="mx-2 text-neutral-700">·</span>

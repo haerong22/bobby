@@ -14,6 +14,8 @@ export type TownEventMap = {
   "door:away": { id: BuildingId };
   /** 문 앞에서 Space 를 눌렀다. React 가 모달을 연다. */
   "building:open": { id: BuildingId };
+  /** 터치 입장 버튼을 눌렀다. 키보드 Space 와 같은 뜻. */
+  "game:interact": { source: "touch" };
   /** 모달이 열려 게임 입력을 끊어야 한다 / 닫혀 되돌려야 한다. */
   "game:pause": { reason: string };
   "game:resume": { reason: string };
