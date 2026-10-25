@@ -36,6 +36,13 @@ export class BootScene extends Phaser.Scene {
     const x = (this.scale.width - width) / 2;
     const y = this.scale.height / 2;
 
+    const label = this.add
+      .text(this.scale.width / 2, y - 14, "마을을 불러오는 중...", {
+        fontSize: "12px",
+        color: "#6b7280",
+      })
+      .setOrigin(0.5, 1);
+
     const bar = this.add.graphics();
     this.load.on("progress", (value: number) => {
       bar.clear();
@@ -44,6 +51,9 @@ export class BootScene extends Phaser.Scene {
       bar.fillStyle(COLORS.door, 1);
       bar.fillRect(x, y, width * value, 6);
     });
-    this.load.on("complete", () => bar.destroy());
+    this.load.on("complete", () => {
+      bar.destroy();
+      label.destroy();
+    });
   }
 }
