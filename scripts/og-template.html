@@ -1,0 +1,79 @@
+<!doctype html>
+<!--
+  OG 이미지(1200x630) 템플릿.
+
+  Next 의 ImageResponse 를 쓰지 않는 이유: 한글을 그리려면 폰트 파일을 넣거나
+  빌드 중에 받아와야 하는데, 정적 이미지 한 장을 위해 치르기엔 비싼 값이다.
+  대신 브라우저로 이 파일을 열어 스크린샷을 뜬다 — 한글 렌더링은 브라우저가 한다.
+
+  재생성 방법은 CLAUDE.md 의 "OG 이미지 다시 만들기" 참고.
+  배경(og-bg.png)은 .tmj 를 오프라인 렌더한 것이라 dev 오버레이가 섞이지 않는다.
+-->
+<meta charset="utf-8" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    position: relative;
+    font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: #1b1e26;
+  }
+  .bg {
+    position: absolute;
+    inset: 0;
+    background-image: url("og-bg.png");
+    background-size: cover;
+    image-rendering: pixelated;
+  }
+  /* 글자가 읽히도록 아래쪽을 어둡게 깐다. */
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(15, 17, 23, 0.15) 0%,
+      rgba(15, 17, 23, 0.75) 55%,
+      rgba(15, 17, 23, 0.96) 100%
+    );
+  }
+  .content {
+    position: absolute;
+    left: 72px;
+    bottom: 72px;
+    right: 72px;
+    color: #f4f6fb;
+  }
+  h1 {
+    font-size: 72px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  p {
+    margin-top: 18px;
+    font-size: 30px;
+    color: #9aa3b2;
+  }
+  .tags {
+    margin-top: 34px;
+    display: flex;
+    gap: 10px;
+  }
+  .tags span {
+    border: 1px solid #3a4152;
+    border-radius: 7px;
+    padding: 7px 16px;
+    font-size: 21px;
+    color: #c3cad6;
+  }
+</style>
+<div class="bg"></div>
+<div class="scrim"></div>
+<div class="content">
+  <h1>Bobby's Town</h1>
+  <p>마을을 돌아다니며 둘러보는 픽셀아트 포트폴리오</p>
+  <div class="tags">
+    <span>경력</span><span>프로젝트</span><span>기술 스택</span><span>연락처</span>
+  </div>
+</div>
