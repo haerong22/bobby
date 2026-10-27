@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import BuildingPanel from "./BuildingPanel";
@@ -67,6 +68,17 @@ export default function TownStage() {
     <main>
       <GameCanvas />
       <ExploreProgress />
+
+      {/* 게임을 켜고 싶지 않은 사람의 탈출구. 이게 없으면 "게임은 레이어다" 가
+          말뿐이 된다. 스크린 리더에게도 canvas 바깥의 유일한 통로다. */}
+      {!openId && (
+        <Link
+          href="/about"
+          className="fixed top-4 left-4 z-30 rounded border border-neutral-700 bg-neutral-900/70 px-3 py-1.5 text-xs text-neutral-300 hover:text-neutral-50"
+        >
+          텍스트로 보기
+        </Link>
+      )}
 
       {/* 터치에서는 하단을 D-pad 가 쓰므로 프롬프트를 띄우지 않는다 —
           대신 입장 버튼이 활성화되는 것으로 알린다. */}
