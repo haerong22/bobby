@@ -3,6 +3,7 @@ import Phaser from "phaser";
 import { PLAYER_SPEED, TILE } from "../constants";
 import type { Facing } from "../sprites";
 import { animKey, IDLE_DOWN_FRAME, PLAYER_SPRITE } from "../sprites";
+
 import { readTouchAxis } from "../touchInput";
 
 type Direction = Facing;
@@ -29,7 +30,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       .setSize(BODY.w, BODY.h)
       .setOffset(BODY.offsetX, BODY.offsetY);
     this.arcadeBody.setCollideWorldBounds(true);
-    this.play(animKey("idle", "down"));
+    this.play(animKey(PLAYER_SPRITE.key, "idle", "down"));
 
     const keyboard = scene.input.keyboard;
     if (keyboard) {
@@ -73,7 +74,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /** 모달이 열린 동안 호출한다. 멈추지 않으면 마지막 속도로 계속 미끄러진다. */
   halt() {
     this.arcadeBody.setVelocity(0, 0);
-    this.play(animKey("idle", this.facing), true);
+    this.play(animKey(PLAYER_SPRITE.key, "idle", this.facing), true);
   }
 
   update() {
@@ -99,6 +100,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     else if (x > 0) this.facing = "right";
 
     const moving = x !== 0 || y !== 0;
-    this.play(animKey(moving ? "walk" : "idle", this.facing), true);
+    this.play(
+      animKey(PLAYER_SPRITE.key, moving ? "walk" : "idle", this.facing),
+      true,
+    );
   }
 }

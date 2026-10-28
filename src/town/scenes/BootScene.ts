@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 
 import { COLORS } from "../constants";
-import { createPlayerAnimations, PLAYER_SPRITE } from "../sprites";
+import { NPC_TEXTURES } from "../npcs";
+import { CHARACTER_SHEET, createCharacterAnimations, PLAYER_SPRITE } from "../sprites";
 import { TILESET } from "../tiles";
 import { MapScene } from "./MapScene";
 
@@ -16,14 +17,21 @@ export class BootScene extends Phaser.Scene {
     this.drawProgress();
     this.load.image(TILESET.key, TILESET.image);
     this.load.tilemapTiledJSON(MapScene.MAP_KEY, "/town/maps/city.tmj");
-    this.load.spritesheet(PLAYER_SPRITE.key, PLAYER_SPRITE.path, {
-      frameWidth: PLAYER_SPRITE.frameWidth,
-      frameHeight: PLAYER_SPRITE.frameHeight,
-    });
+    const frames = {
+      frameWidth: CHARACTER_SHEET.frameWidth,
+      frameHeight: CHARACTER_SHEET.frameHeight,
+    };
+    this.load.spritesheet(PLAYER_SPRITE.key, PLAYER_SPRITE.path, frames);
+    for (const texture of NPC_TEXTURES) {
+      this.load.spritesheet(texture, `/town/sprites/${texture}.png`, frames);
+    }
   }
 
   create() {
-    createPlayerAnimations(this);
+    createCharacterAnimations(this, PLAYER_SPRITE.key);
+    for (const texture of NPC_TEXTURES) {
+      createCharacterAnimations(this, texture);
+    }
     this.scene.start(MapScene.KEY);
   }
 
