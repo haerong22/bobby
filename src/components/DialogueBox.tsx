@@ -2,10 +2,12 @@
 
 type Props = {
   label: string | null;
+  /** 문이면 "입장", 주민이면 "대화". */
+  action?: string;
 };
 
-/** 문 앞에 섰을 때 뜨는 하단 프롬프트. */
-export default function DialogueBox({ label }: Props) {
+/** 문이나 주민 옆에 섰을 때 뜨는 하단 프롬프트. */
+export default function DialogueBox({ label, action = "입장" }: Props) {
   return (
     // 내용을 조건부로 그린다. opacity 로만 숨기면 스크린 리더가 계속 읽는다.
     <div
@@ -17,7 +19,7 @@ export default function DialogueBox({ label }: Props) {
           <span className="font-semibold">{label}</span>
           <span className="mx-2 text-neutral-500">·</span>
           <kbd className="rounded bg-neutral-700 px-1.5 py-0.5 text-xs">Space</kbd>
-          <span className="ml-2 text-neutral-400">로 입장</span>
+          <span className="ml-2 text-neutral-400">로 {action}</span>
         </p>
       )}
     </div>

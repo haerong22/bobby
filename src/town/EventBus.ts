@@ -16,6 +16,11 @@ export type TownEventMap = {
   "building:open": { id: BuildingId };
   /** 터치 입장 버튼을 눌렀다. 키보드 Space 와 같은 뜻. */
   "game:interact": { source: "touch" };
+  /** 주민 옆에 섰다 / 벗어났다. */
+  "npc:near": { id: string; name: string };
+  "npc:away": { id: string };
+  /** 주민에게 말을 걸었다. React 가 대화창을 연다. */
+  "npc:talk": { id: string; name: string; lines: readonly string[] };
   /** 모달이 열려 게임 입력을 끊어야 한다 / 닫혀 되돌려야 한다. */
   "game:pause": { reason: string };
   "game:resume": { reason: string };
