@@ -1,5 +1,3 @@
-import type { Material } from "./tiles";
-
 export type BuildingId =
   | "home"
   | "office"
@@ -23,8 +21,8 @@ export interface Building {
   h: number;
   /** 출입구의 건물 내 가로 오프셋 (타일). Phase 3 의 상호작용 존이 여기 붙는다. */
   doorOffset: number;
-  /** 외벽 재질. 타일 묶음은 tiles.ts 의 MATERIALS 가 들고 있다. */
-  material: Material;
+  /** 건물 스프라이트 키. public/town/buildings/<id>.png 와 같다. */
+  sprite: string;
 }
 
 /**
@@ -37,79 +35,83 @@ export const BUILDINGS: readonly Building[] = [
     label: "학교",
     route: "/education",
     x: 20,
-    y: 2,
-    w: 12,
-    h: 8,
-    doorOffset: 6,
-    material: "tan",
+    y: 3,
+    w: 7,
+    h: 6,
+    doorOffset: 3,
+    sprite: "school",
   },
   {
     id: "office",
     label: "회사",
     route: "/resume",
-    x: 49,
-    y: 2,
-    w: 12,
-    h: 8,
-    doorOffset: 6,
-    material: "gray",
+    x: 50,
+    y: 3,
+    w: 6,
+    h: 6,
+    doorOffset: 3,
+    sprite: "office",
   },
   {
     id: "home",
     label: "집",
     route: "/about",
     x: 3,
-    y: 17,
-    w: 6,
-    h: 6,
-    doorOffset: 3,
-    material: "red",
+    y: 18,
+    w: 4,
+    h: 4,
+    doorOffset: 2,
+    sprite: "home",
   },
   {
     id: "workshop",
     label: "공방",
     route: "/projects",
     x: 3,
-    y: 31,
-    w: 7,
-    h: 6,
+    y: 32,
+    w: 5,
+    h: 5,
     doorOffset: 3,
-    material: "red",
+    sprite: "workshop",
   },
   {
     id: "press",
     label: "신문사",
     route: "/news",
     x: 20,
-    y: 17,
-    w: 7,
+    y: 18,
+    w: 6,
     h: 5,
     doorOffset: 3,
-    material: "gray",
+    sprite: "press",
   },
   {
     id: "library",
     label: "도서관",
     route: "/skills",
-    x: 33,
-    y: 17,
+    x: 32,
+    y: 18,
     w: 6,
     h: 5,
     doorOffset: 3,
-    material: "tan",
+    sprite: "library",
   },
   {
     id: "post",
     label: "우체국",
     route: "/contact",
     x: 50,
-    y: 17,
+    y: 18,
     w: 6,
     h: 5,
     doorOffset: 3,
-    material: "red",
+    sprite: "post",
   },
 ] as const;
+
+/** Phaser 텍스처 키. 파일 이름과 분리해 두면 나중에 한쪽만 바꿔도 된다. */
+export const buildingTexture = (building: Building) =>
+  `building-${building.sprite}`;
 
 export function buildingById(id: BuildingId): Building {
   const found = BUILDINGS.find((building) => building.id === id);

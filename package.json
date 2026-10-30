@@ -12,7 +12,9 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "gen:map": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-map.mts",
-    "gen:npc": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-npc-sprites.mts"
+    "gen:npc": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-npc-sprites.mts",
+    "gen:assets": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-town-assets.mts",
+    "gen:buildings": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/draw-buildings.mts"
   },
   "dependencies": {
     "next": "16.4.3",

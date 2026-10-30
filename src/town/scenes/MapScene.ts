@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 
 import type { BuildingId } from "../buildings";
-import { BUILDINGS, doorTile } from "../buildings";
+import { BUILDINGS, buildingTexture, doorTile } from "../buildings";
 import {
   SPAWN_TILE,
   TEXT_RESOLUTION,
@@ -13,13 +13,10 @@ import { Npc } from "../entities/Npc";
 import { Player } from "../entities/Player";
 import { EventBus } from "../EventBus";
 import { NPCS } from "../npcs";
-import { DOOR, TILESET } from "../tiles";
+import { TILESET } from "../tiles";
 
 /** 타일 좌표 → 타일 중심의 월드 픽셀 좌표 */
 const center = (tile: number, span = 1) => (tile + span / 2) * TILE;
-
-/** Tiled 의 firstgid 가 1 이므로 Phaser 의 tile.index 는 타일 인덱스 + 1 이다. */
-const DOOR_INDEX = DOOR + 1;
 
 export class MapScene extends Phaser.Scene {
   static readonly KEY = "MapScene";
@@ -47,26 +44,18 @@ export class MapScene extends Phaser.Scene {
     }
 
     const ground = map.createLayer("ground", tileset, 0, 0);
-    const buildings = map.createLayer("buildings", tileset, 0, 0);
-    const props = map.createLayer("props", tileset, 0, 0);
-    if (!ground || !buildings || !props) {
-      throw new Error(".tmj 의 레이어 이름이 ground/buildings/props 와 어긋났다.");
+    if (!ground) {
+      throw new Error(".tmj 에 'ground' 레이어가 없다.");
     }
-
     ground.setDepth(0);
-    buildings.setDepth(1);
-    props.setDepth(2);
-
-    // 출입문만 밟고 설 수 있어야 하므로 충돌에서 뺀다.
-    buildings.setCollisionByExclusion([-1, DOOR_INDEX]);
-    props.setCollisionByExclusion([-1]);
 
     this.mapSize = { w: map.widthInPixels, h: map.heightInPixels };
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
+    const walls = this.placeBuildings();
+
     this.player = new Player(this, center(SPAWN_TILE.x), center(SPAWN_TILE.y));
-    this.physics.add.collider(this.player, buildings);
-    this.physics.add.collider(this.player, props);
+    this.physics.add.collider(this.player, walls);
 
     // 주민은 건물·가로수와 충돌시키지 않는다. 순찰 경로를 비워 둔 전제이고,
     // 충돌을 걸면 한 번 끼었을 때 영영 빠져나오지 못한다.
@@ -267,6 +256,52 @@ export class MapScene extends Phaser.Scene {
       .setResolution(TEXT_RESOLUTION)
       .setDepth(7)
       .setVisible(false);
+  }
+
+  /**
+   * 건물을 스프라이트로 놓고 충돌체를 만든다.
+   *
+   * 건물 한 채당 사각형 세 개를 쓴다 — 윗부분 전체, 그리고 아랫줄의 문 좌우.
+   * 문 칸만 비워야 플레이어가 문 앞에 설 수 있다.
+   */
+  private placeBuildings() {
+    const walls: Phaser.GameObjects.Rectangle[] = [];
+
+    const wall = (
+      tileX: number,
+      tileY: number,
+      tilesW: number,
+      tilesH: number,
+    ) => {
+      if (tilesW <= 0 || tilesH <= 0) return;
+      const rect = this.add.rectangle(
+        center(tileX, tilesW),
+        center(tileY, tilesH),
+        tilesW * TILE,
+        tilesH * TILE,
+      );
+      this.physics.add.existing(rect, true);
+      walls.push(rect);
+    };
+
+    for (const building of BUILDINGS) {
+      this.add
+        .image(
+          center(building.x, building.w),
+          center(building.y, building.h),
+          buildingTexture(building),
+        )
+        .setDepth(5);
+
+      const door = doorTile(building);
+      const lastRow = building.y + building.h - 1;
+
+      wall(building.x, building.y, building.w, building.h - 1);
+      wall(building.x, lastRow, door.x - building.x, 1);
+      wall(door.x + 1, lastRow, building.x + building.w - door.x - 1, 1);
+    }
+
+    return walls;
   }
 
   /** 건물 이름. 실제 간판 스프라이트가 생기면 이 자리를 대체한다. */

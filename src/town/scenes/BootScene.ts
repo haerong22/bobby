@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 
+import { BUILDINGS, buildingTexture } from "../buildings";
 import { COLORS } from "../constants";
 import { NPC_TEXTURES } from "../npcs";
 import { CHARACTER_SHEET, createCharacterAnimations, PLAYER_SPRITE } from "../sprites";
@@ -17,6 +18,12 @@ export class BootScene extends Phaser.Scene {
     this.drawProgress();
     this.load.image(TILESET.key, TILESET.image);
     this.load.tilemapTiledJSON(MapScene.MAP_KEY, "/town/maps/city.tmj");
+    for (const building of BUILDINGS) {
+      this.load.image(
+        buildingTexture(building),
+        `/town/buildings/${building.sprite}.png`,
+      );
+    }
     const frames = {
       frameWidth: CHARACTER_SHEET.frameWidth,
       frameHeight: CHARACTER_SHEET.frameHeight,
