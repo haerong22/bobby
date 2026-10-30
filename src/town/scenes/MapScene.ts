@@ -13,6 +13,7 @@ import { Npc } from "../entities/Npc";
 import { Player } from "../entities/Player";
 import { EventBus } from "../EventBus";
 import { NPCS } from "../npcs";
+import { computeProps } from "../props";
 import { TILESET } from "../tiles";
 
 /** 타일 좌표 → 타일 중심의 월드 픽셀 좌표 */
@@ -52,7 +53,7 @@ export class MapScene extends Phaser.Scene {
     this.mapSize = { w: map.widthInPixels, h: map.heightInPixels };
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-    const walls = this.placeBuildings();
+    const walls = [...this.placeBuildings(), ...this.placeProps()];
 
     this.player = new Player(this, center(SPAWN_TILE.x), center(SPAWN_TILE.y));
     this.physics.add.collider(this.player, walls);
@@ -299,6 +300,36 @@ export class MapScene extends Phaser.Scene {
       wall(building.x, building.y, building.w, building.h - 1);
       wall(building.x, lastRow, door.x - building.x, 1);
       wall(door.x + 1, lastRow, building.x + building.w - door.x - 1, 1);
+    }
+
+    return walls;
+  }
+
+  /**
+   * 거리 소품. 충돌은 이미지 전체가 아니라 밑동만 잡는다 — 가로등 불빛 부분에
+   * 막히면 길이 좁아 보이고 실제로도 답답하다.
+   */
+  private placeProps() {
+    const walls: Phaser.GameObjects.Rectangle[] = [];
+
+    for (const prop of computeProps()) {
+      this.add
+        .image(
+          center(prop.x, prop.w),
+          center(prop.y, prop.h),
+          `prop-${prop.texture}`,
+        )
+        .setDepth(4);
+
+      const footY = prop.y + prop.h - prop.footprintH;
+      const rect = this.add.rectangle(
+        center(prop.x, prop.w),
+        center(footY, prop.footprintH),
+        prop.w * TILE,
+        prop.footprintH * TILE,
+      );
+      this.physics.add.existing(rect, true);
+      walls.push(rect);
     }
 
     return walls;

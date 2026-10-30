@@ -3,6 +3,7 @@ import Phaser from "phaser";
 import { BUILDINGS, buildingTexture } from "../buildings";
 import { COLORS } from "../constants";
 import { NPC_TEXTURES } from "../npcs";
+import { PROP_TEXTURES } from "../props";
 import { CHARACTER_SHEET, createCharacterAnimations, PLAYER_SPRITE } from "../sprites";
 import { TILESET } from "../tiles";
 import { MapScene } from "./MapScene";
@@ -23,6 +24,9 @@ export class BootScene extends Phaser.Scene {
         buildingTexture(building),
         `/town/buildings/${building.sprite}.png`,
       );
+    }
+    for (const texture of PROP_TEXTURES) {
+      this.load.image(`prop-${texture}`, `/town/props/${texture}.png`);
     }
     const frames = {
       frameWidth: CHARACTER_SHEET.frameWidth,
