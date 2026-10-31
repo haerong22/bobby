@@ -52,18 +52,9 @@ export default async function SectionPage({ params }: PageProps<"/[section]">) {
         ))}
       </ul>
 
-      {/* 에셋 출처. 캐릭터가 CC-BY 라 표기가 의무다. 임의로 지우면 안 된다. */}
+      {/* 에셋 출처. 둘 다 CC-BY 라 표기가 의무다. 임의로 지우면 안 된다. */}
       <footer className="mt-8 text-xs leading-relaxed text-neutral-600">
-        타일셋{" "}
-        <a
-          href="https://kenney.nl"
-          target="_blank"
-          rel="noreferrer noopener"
-          className="underline underline-offset-2 hover:text-neutral-400"
-        >
-          Kenney
-        </a>{" "}
-        (CC0) · 캐릭터{" "}
+        게임 아트{" "}
         <a
           href="https://aquumgifts.itch.io"
           target="_blank"
@@ -71,6 +62,15 @@ export default async function SectionPage({ params }: PageProps<"/[section]">) {
           className="underline underline-offset-2 hover:text-neutral-400"
         >
           &ldquo;Cozy Town Lite&rdquo; by Spaceyyy
+        </a>{" "}
+        ·{" "}
+        <a
+          href="https://aquumgifts.itch.io"
+          target="_blank"
+          rel="noreferrer noopener"
+          className="underline underline-offset-2 hover:text-neutral-400"
+        >
+          &ldquo;Cozy Farm Village Lite&rdquo; by Bramble &amp; Byte
         </a>{" "}
         (CC-BY 4.0)
       </footer>

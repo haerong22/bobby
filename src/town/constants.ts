@@ -48,15 +48,21 @@ export const ROADS = {
   ],
 } as const;
 
-/** 공원. 건물이 없는 블록을 잔디로 채운다. */
+/**
+ * 녹지. 큰 공원 셋과 블록 사이를 메우는 작은 뙈기들.
+ *
+ * 작은 뙈기가 없으면 보도가 휑한 베이지 벌판처럼 보인다. 건물과 주민 순찰
+ * 경로를 피해 배치했다 — 겹치면 건물이 잔디 위에 떠 있는 꼴이 된다.
+ */
 export const PARKS = [
-  { x: 2, y: 2, w: 10, h: 8 },
-  { x: 20, y: 31, w: 12, h: 7 },
-  { x: 50, y: 31, w: 10, h: 7 },
+  { x: 48, y: 16, w: 15, h: 10 },
+  { x: 48, y: 31, w: 15, h: 8 },
+  { x: 18, y: 31, w: 13, h: 8 },
+  { x: 1, y: 1, w: 12, h: 5 },
 ] as const;
 
 /** 시작 지점 — 집 문 앞 (타일 단위) */
-export const SPAWN_TILE = { x: 6, y: 24 } as const;
+export const SPAWN_TILE = { x: 10, y: 10 } as const;
 
 export const COLORS = {
   ground: 0x1b1e26,
