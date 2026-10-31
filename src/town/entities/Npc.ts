@@ -28,7 +28,6 @@ export class Npc extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setDepth(9);
     this.arcadeBody
       .setSize(BODY.w, BODY.h)
       .setOffset(BODY.offsetX, BODY.offsetY);
@@ -78,6 +77,8 @@ export class Npc extends Phaser.Physics.Arcade.Sprite {
   }
 
   update() {
+    // 발 위치로 깊이를 갱신한다 — 건물·나무와 같은 기준.
+    this.setDepth(this.arcadeBody.bottom);
     if (this.frozen) return;
 
     const position = new Phaser.Math.Vector2(this.x, this.y);

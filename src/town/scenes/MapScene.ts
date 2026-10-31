@@ -255,7 +255,7 @@ export class MapScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 1)
       .setResolution(TEXT_RESOLUTION)
-      .setDepth(7)
+      .setDepth(100001)
       .setVisible(false);
   }
 
@@ -286,13 +286,14 @@ export class MapScene extends Phaser.Scene {
     };
 
     for (const building of BUILDINGS) {
+      // 깊이는 바닥 y 로 준다. 앞(아래)에 있는 것이 뒤를 가려야 자연스럽다.
       this.add
         .image(
           center(building.x, building.w),
           center(building.y, building.h),
           buildingTexture(building),
         )
-        .setDepth(5);
+        .setDepth((building.y + building.h) * TILE);
 
       const door = doorTile(building);
       const lastRow = building.y + building.h - 1;
@@ -319,7 +320,7 @@ export class MapScene extends Phaser.Scene {
           center(prop.y, prop.h),
           `prop-${prop.texture}`,
         )
-        .setDepth(4);
+        .setDepth((prop.y + prop.h) * TILE);
 
       const footY = prop.y + prop.h - prop.footprintH;
       const rect = this.add.rectangle(
@@ -352,7 +353,7 @@ export class MapScene extends Phaser.Scene {
         )
         .setOrigin(0.5, 0)
         .setResolution(TEXT_RESOLUTION)
-        .setDepth(6);
+        .setDepth(100000);
     }
   }
 }

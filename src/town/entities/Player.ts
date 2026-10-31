@@ -25,7 +25,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setDepth(10);
     this.arcadeBody
       .setSize(BODY.w, BODY.h)
       .setOffset(BODY.offsetX, BODY.offsetY);
@@ -98,6 +97,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     else if (y > 0) this.facing = "down";
     else if (x < 0) this.facing = "left";
     else if (x > 0) this.facing = "right";
+
+    // 발 위치로 깊이를 갱신한다. 건물·나무도 같은 기준이라 앞뒤가 자연스럽게 가려진다.
+    this.setDepth(this.arcadeBody.bottom);
 
     const moving = x !== 0 || y !== 0;
     this.play(
