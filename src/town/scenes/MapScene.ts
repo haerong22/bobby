@@ -336,13 +336,19 @@ export class MapScene extends Phaser.Scene {
     return walls;
   }
 
-  /** 건물 이름. 실제 간판 스프라이트가 생기면 이 자리를 대체한다. */
+  /**
+   * 건물 이름.
+   *
+   * **지붕 위에 띄운다.** 벽 한가운데 놓으면 건물마다 달아 둔 그림 간판
+   * (책 · 학사모 · 편지…) 을 정통으로 가린다 — 용도를 말하는 1차 신호가
+   * 그림이므로 글자가 그걸 덮으면 안 된다.
+   */
   private drawLabels() {
     for (const building of BUILDINGS) {
       this.add
         .text(
           center(building.x, building.w),
-          (building.y + building.h - 3) * TILE - 9,
+          building.y * TILE - 2,
           building.label,
           {
             fontSize: "8px",
@@ -351,7 +357,7 @@ export class MapScene extends Phaser.Scene {
             padding: { x: 2, y: 1 },
           },
         )
-        .setOrigin(0.5, 0)
+        .setOrigin(0.5, 1)
         .setResolution(TEXT_RESOLUTION)
         .setDepth(100000);
     }
