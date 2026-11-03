@@ -26,8 +26,8 @@ export const NPCS: readonly NpcData[] = [
     id: "minsu",
     name: "민수",
     texture: "npc-a",
-    from: { x: 27, y: 26 },
-    to: { x: 31, y: 26 },
+    from: { x: 20, y: 15 },
+    to: { x: 27, y: 15 },
     lines: [
       "안녕하세요. 이 마을 처음이신가요?",
       "신문사에 들르면 요즘 기술 소식을 읽을 수 있어요.",
@@ -38,8 +38,8 @@ export const NPCS: readonly NpcData[] = [
     id: "jiyeon",
     name: "지연",
     texture: "npc-b",
-        from: { x: 29, y: 11 },
-    to: { x: 35, y: 11 },
+    from: { x: 37, y: 24 },
+    to: { x: 44, y: 24 },
     lines: [
       "저 빨간 지붕이 이 마을 주인 집이에요.",
       "옆 공방에 가면 그동안 만든 것들을 볼 수 있어요.",
@@ -49,8 +49,8 @@ export const NPCS: readonly NpcData[] = [
     id: "jungwoo",
     name: "정우",
     texture: "npc-c",
-    from: { x: 54, y: 20 },
-    to: { x: 54, y: 20 },
+    from: { x: 20, y: 26 },
+    to: { x: 20, y: 26 },
     lines: [
       "우체국에서 연락처를 받아 가세요.",
       "마을을 전부 둘러보면 뭔가 좋은 일이 있을지도 모르죠.",

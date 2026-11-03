@@ -169,12 +169,96 @@ function drawTreeGrate(): Bitmap {
   return c.toBitmap();
 }
 
+/** 타원 채우기. 분수 수반처럼 동그란 것에 쓴다. */
+function ellipse(
+  c: Canvas,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  color: number,
+) {
+  for (let y = -ry; y <= ry; y += 1) {
+    for (let x = -rx; x <= rx; x += 1) {
+      if ((x / rx) ** 2 + (y / ry) ** 2 <= 1) c.px(cx + x, cy + y, color);
+    }
+  }
+}
+
+/**
+ * 분수. 48x48 (3x3 타일).
+ *
+ * 광장 한가운데 놓는다. **마을에는 초점이 하나는 있어야 한다** — 없으면 아무리
+ * 채워도 "건물이 흩어진 벌판" 으로 보인다.
+ */
+function drawFountain(): Bitmap {
+  const c = new Canvas(48, 48);
+  const STONE = { light: 0xeae3d2, mid: 0xc9c0aa, dark: 0x9b9380 } as const;
+  const WATER = { light: 0xb6e0f0, mid: 0x74b6d8, dark: 0x4a87ad } as const;
+  const cx = 24;
+  const cy = 33;
+
+  baseShadow(c, cx, 45, 20);
+
+  // 아래 수반
+  ellipse(c, cx, cy, 21, 12, BASE.outline);
+  ellipse(c, cx, cy, 20, 11, STONE.mid);
+  ellipse(c, cx, cy - 1, 20, 10, STONE.light);
+  ellipse(c, cx, cy + 2, 20, 8, STONE.dark);
+  ellipse(c, cx, cy, 16, 8, BASE.outline);
+  ellipse(c, cx, cy, 15, 7, WATER.dark);
+  ellipse(c, cx, cy - 1, 15, 6, WATER.mid);
+  ellipse(c, cx, cy - 2, 13, 4, WATER.light);
+
+  // 가운데 기둥과 윗 수반
+  c.rect(cx - 3, cy - 14, 7, 14, STONE.mid);
+  c.vLine(cx - 3, cy - 14, 14, STONE.light);
+  c.vLine(cx + 2, cy - 14, 14, STONE.dark);
+  c.outline(cx - 3, cy - 14, 7, 14, BASE.outline);
+  ellipse(c, cx, cy - 15, 11, 5, BASE.outline);
+  ellipse(c, cx, cy - 15, 10, 4, STONE.light);
+  ellipse(c, cx, cy - 15, 7, 2, WATER.mid);
+  c.rect(cx - 1, cy - 24, 3, 8, STONE.light);
+  c.outline(cx - 1, cy - 24, 3, 8, BASE.outline);
+
+  // 뿜어 나와 떨어지는 물줄기
+  for (const [dx, top, len] of [
+    [-8, cy - 13, 9],
+    [8, cy - 13, 9],
+    [0, cy - 28, 5],
+  ] as const) {
+    c.vLine(cx + dx, top, len, WATER.light);
+    c.px(cx + dx - 1, top + 1, WATER.mid);
+    c.px(cx + dx + 1, top + 2, WATER.mid);
+  }
+  return c.toBitmap();
+}
+
+/** 생울타리. 16x16. 마당 가장자리를 긋는다 — 빈 잔디가 덜 허전해진다. */
+function drawHedge(): Bitmap {
+  const c = new Canvas(16, 16);
+  baseShadow(c, 8, 14, 7);
+  c.rect(0, 4, 16, 10, LEAF.mid);
+  c.rect(0, 4, 16, 2, LEAF.light);
+  c.rect(0, 11, 16, 2, LEAF.dark);
+  for (let x = 0; x < 16; x += 1) {
+    if (noise(x * 7, 3) > 0.6) c.px(x, 3, LEAF.light);
+    if (noise(x * 5, 9) > 0.7) c.px(x, 8, LEAF.light);
+    if (noise(x * 3, 2) < 0.3) c.px(x, 10, LEAF.deep);
+  }
+  c.hLine(0, 3, 16, BASE.outline);
+  c.hLine(0, 13, 16, BASE.outline);
+  return c.toBitmap();
+}
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PROPS: Record<string, Bitmap> = {
   "tree-a": drawTree(1),
   "tree-b": drawTree(5),
   bush: drawBush(),
   "tree-grate": drawTreeGrate(),
+  fountain: drawFountain(),
+  hedge: drawHedge(),
 };
 
 for (const [name, bitmap] of Object.entries(PROPS)) {
