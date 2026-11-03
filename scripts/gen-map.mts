@@ -12,7 +12,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { MAP_TILES, PARKS, ROADS } from "../src/town/constants.ts";
+import { BUILDINGS, doorTile } from "../src/town/buildings.ts";
+import { MAP_TILES, PARKS, PLAZA, ROADS } from "../src/town/constants.ts";
 import { FLOWER_VARIANTS, GRASS_VARIANTS, T, TILESET } from "../src/town/tiles.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -55,56 +56,100 @@ const inPark = (x: number, y: number) =>
   );
 
 // ── ground ──────────────────────────────────────────────────────────────
-const ground = layer(gid(T.sidewalk));
+/**
+ * **지면 기본은 잔디다.**
+ *
+ * 한동안 보도를 깔아 두고 그 위에 공원만 얹었는데, 마을이 "건물 일곱 채가
+ * 흩어진 베이지 벌판" 으로 보였다. 포장은 사람이 실제로 걷는 데만 깐다 —
+ * 길 · 길 양옆 보도 두 줄 · 광장 · 건물 앞마당 · 문 앞 오솔길. 나머지는 전부 잔디다.
+ */
+const ground = layer(gid(T.grass));
+const paved: boolean[] = new Array(W * H).fill(false);
 
-for (let y = 0; y < H; y += 1) {
+const pave = (x: number, y: number) => {
+  if (x < 0 || y < 0 || x >= W || y >= H) return;
+  paved[y * W + x] = true;
+};
+const isPaved = (x: number, y: number) =>
+  x >= 0 && y >= 0 && x < W && y < H && paved[y * W + x] === true;
+
+// 길 양옆 보도 두 줄. 한 줄이면 가로수를 심는 순간 사람이 지나갈 데가 없다.
+const WALK = 2;
+for (const band of ROADS.horizontal) {
   for (let x = 0; x < W; x += 1) {
-    if (!onRoad(x, y)) continue;
-    // 아스팔트는 두 종류를 섞고, 드물게 맨홀·배수구를 얹어 반복감을 줄인다.
-    const n = noise(x, y);
-    if (n > 0.975) put(ground, x, y, T.manhole);
-    else if (n > 0.95) put(ground, x, y, T.drain);
-    else put(ground, x, y, n > 0.5 ? T.asphalt : T.asphaltAlt);
+    for (let i = 1; i <= WALK; i += 1) {
+      pave(x, band.from - i);
+      pave(x, band.to + i);
+    }
   }
 }
-
-// 공원 잔디.
-for (const park of PARKS) {
-  for (let y = park.y; y < park.y + park.h; y += 1) {
-    for (let x = park.x; x < park.x + park.w; x += 1) {
-      const n = noise(x * 3, y * 3);
-      put(
-        ground,
-        x,
-        y,
-        n > 0.86 ? pick(FLOWER_VARIANTS, x, y) : pick(GRASS_VARIANTS, x, y),
-      );
+for (const band of ROADS.vertical) {
+  for (let y = 0; y < H; y += 1) {
+    for (let i = 1; i <= WALK; i += 1) {
+      pave(band.from - i, y);
+      pave(band.to + i, y);
     }
   }
 }
 
-// 잔디밭 가장자리에 보도 경계를 둘러 공원처럼 보이게 한다.
-for (const park of PARKS) {
-  const right = park.x + park.w - 1;
-  const bottom = park.y + park.h - 1;
-  for (let x = park.x; x <= right; x += 1) {
-    put(ground, x, park.y, T.grassEdgeTop);
-    put(ground, x, bottom, T.grassEdgeBottom);
+// 광장.
+for (let y = PLAZA.y; y < PLAZA.y + PLAZA.h; y += 1) {
+  for (let x = PLAZA.x; x < PLAZA.x + PLAZA.w; x += 1) pave(x, y);
+}
+
+// 건물 앞마당 — 발자국에 한 칸 두른다. 잔디에서 벽이 바로 솟으면 떠 보인다.
+for (const b of BUILDINGS) {
+  for (let y = b.y - 1; y <= b.y + b.h; y += 1) {
+    for (let x = b.x - 1; x <= b.x + b.w; x += 1) pave(x, y);
   }
-  for (let y = park.y; y <= bottom; y += 1) {
-    put(ground, park.x, y, T.grassEdgeLeft);
-    put(ground, right, y, T.grassEdgeRight);
+  // 문에서 길까지 이어지는 오솔길.
+  const door = doorTile(b);
+  for (let y = door.y; y < H; y += 1) {
+    pave(door.x, y);
+    if (onRoad(door.x, y) || isPaved(door.x, y + 1)) break;
   }
 }
 
-// 차선. 교차로 구간은 비워 둬야 도로처럼 읽힌다.
+for (let y = 0; y < H; y += 1) {
+  for (let x = 0; x < W; x += 1) {
+    if (onRoad(x, y)) {
+      // 아스팔트는 두 종류를 섞고, 드물게 맨홀·배수구를 얹어 반복감을 줄인다.
+      const n = noise(x, y);
+      if (n > 0.975) put(ground, x, y, T.manhole);
+      else if (n > 0.95) put(ground, x, y, T.drain);
+      else put(ground, x, y, n > 0.5 ? T.asphalt : T.asphaltAlt);
+    } else if (isPaved(x, y)) {
+      put(ground, x, y, T.sidewalk);
+    } else {
+      const n = noise(x * 3, y * 3);
+      const flowery = inPark(x, y) && n > 0.82;
+      put(ground, x, y, flowery ? pick(FLOWER_VARIANTS, x, y) : pick(GRASS_VARIANTS, x, y));
+    }
+  }
+}
+
+// 잔디가 포장과 맞닿는 줄은 전환 타일로 덮는다. 안 그러면 경계가 칼로 자른 듯하다.
+const hard = (x: number, y: number) => onRoad(x, y) || isPaved(x, y);
+for (let y = 0; y < H; y += 1) {
+  for (let x = 0; x < W; x += 1) {
+    if (hard(x, y)) continue;
+    if (hard(x, y - 1)) put(ground, x, y, T.grassEdgeTop);
+    else if (hard(x, y + 1)) put(ground, x, y, T.grassEdgeBottom);
+    else if (hard(x - 1, y)) put(ground, x, y, T.grassEdgeLeft);
+    else if (hard(x + 1, y)) put(ground, x, y, T.grassEdgeRight);
+  }
+}
+
+// 차선. 교차로와 2칸 골목은 비운다 — 골목 한가운데 중앙선은 어색하다.
 for (const band of ROADS.horizontal) {
+  if (band.to - band.from < 2) continue;
   for (let x = 0; x < W; x += 1) {
     if (within(ROADS.vertical, x)) continue;
     put(ground, x, band.from + 1, T.lineEw);
   }
 }
 for (const band of ROADS.vertical) {
+  if (band.to - band.from < 2) continue;
   for (let y = 0; y < H; y += 1) {
     if (within(ROADS.horizontal, y)) continue;
     put(ground, band.from + 1, y, T.lineNs);
@@ -125,9 +170,10 @@ for (const h of ROADS.horizontal) {
   }
 }
 
-// 연석. 도로와 보도가 맞닿는 줄을 전환 타일로 덮는다. 공원 가장자리는 건너뛴다.
+// 연석. 도로와 보도가 맞닿는 줄을 전환 타일로 덮는다. 잔디가 바로 닿는 자리는
+// 이미 잔디 전환 타일이 깔려 있으므로 건너뛴다.
 const curb = (x: number, y: number, index: number) => {
-  if (onRoad(x, y) || inPark(x, y)) return;
+  if (onRoad(x, y) || !isPaved(x, y)) return;
   put(ground, x, y, index);
 };
 for (const band of ROADS.horizontal) {
