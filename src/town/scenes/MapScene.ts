@@ -19,6 +19,16 @@ import { TILESET } from "../tiles";
 /** 타일 좌표 → 타일 중심의 월드 픽셀 좌표 */
 const center = (tile: number, span = 1) => (tile + span / 2) * TILE;
 
+/**
+ * 정지 충돌체의 아래를 깎는 양 (px).
+ *
+ * 플레이어 충돌체는 발밑 6px 이라 타일 한가운데 서면 **두 줄에 걸친다.** 그
+ * 상태로 건물 앞 보도를 따라 걸으면 윗줄에 있는 건물 아랫줄·가로등 충돌체에
+ * 걸려 멈춘다 — 가게 앞을 지나갈 수가 없다. 아랫줄만 깎으면 발이 바짝 붙어도
+ * 지나가고, 그 칸에 올라서려 할 때는 여전히 막힌다.
+ */
+const FACADE_CLEARANCE = 5;
+
 export class MapScene extends Phaser.Scene {
   static readonly KEY = "MapScene";
   static readonly MAP_KEY = "city-map";
@@ -268,18 +278,28 @@ export class MapScene extends Phaser.Scene {
   private placeBuildings() {
     const walls: Phaser.GameObjects.Rectangle[] = [];
 
+    /**
+     * `shrinkBottom` 은 충돌체 아래를 그만큼 깎는다.
+     *
+     * 플레이어 충돌체는 발밑 6px 이라 타일 한가운데 서면 **두 줄에 걸친다.**
+     * 그 상태로 건물 앞 보도를 따라 걸으면 윗줄에 있는 건물 아랫줄 충돌체에
+     * 걸려 멈춰 버린다 — 가게 앞을 지나갈 수가 없다. 아랫줄만 5px 깎으면
+     * 발이 벽에 바짝 붙어도 지나간다.
+     */
     const wall = (
       tileX: number,
       tileY: number,
       tilesW: number,
       tilesH: number,
+      shrinkBottom = 0,
     ) => {
       if (tilesW <= 0 || tilesH <= 0) return;
+      const height = tilesH * TILE - shrinkBottom;
       const rect = this.add.rectangle(
         center(tileX, tilesW),
-        center(tileY, tilesH),
+        tileY * TILE + height / 2,
         tilesW * TILE,
-        tilesH * TILE,
+        height,
       );
       this.physics.add.existing(rect, true);
       walls.push(rect);
@@ -299,8 +319,14 @@ export class MapScene extends Phaser.Scene {
       const lastRow = building.y + building.h - 1;
 
       wall(building.x, building.y, building.w, building.h - 1);
-      wall(building.x, lastRow, door.x - building.x, 1);
-      wall(door.x + 1, lastRow, building.x + building.w - door.x - 1, 1);
+      wall(building.x, lastRow, door.x - building.x, 1, FACADE_CLEARANCE);
+      wall(
+        door.x + 1,
+        lastRow,
+        building.x + building.w - door.x - 1,
+        1,
+        FACADE_CLEARANCE,
+      );
     }
 
     return walls;
@@ -322,12 +348,15 @@ export class MapScene extends Phaser.Scene {
         )
         .setDepth((prop.y + prop.h) * TILE);
 
+      // 건물 앞면과 같은 이유로 밑동 충돌체도 아래를 깎는다. 안 깎으면 보도
+      // 둘째 줄을 걷는 동안 연석 줄에 선 가로등·가로수에 계속 걸린다.
       const footY = prop.y + prop.h - prop.footprintH;
+      const height = prop.footprintH * TILE - FACADE_CLEARANCE;
       const rect = this.add.rectangle(
         center(prop.x, prop.w),
-        center(footY, prop.footprintH),
+        footY * TILE + height / 2,
         prop.w * TILE,
-        prop.footprintH * TILE,
+        height,
       );
       this.physics.add.existing(rect, true);
       walls.push(rect);
