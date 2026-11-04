@@ -234,20 +234,27 @@ function drawFountain(): Bitmap {
   return c.toBitmap();
 }
 
-/** 생울타리. 16x16. 마당 가장자리를 긋는다 — 빈 잔디가 덜 허전해진다. */
+/**
+ * 생울타리. 16x16.
+ *
+ * **좌우에는 테두리를 두르지 않는다.** 관목처럼 덩어리 함수로 그렸더니 타일마다
+ * 사방에 테두리가 생겨, 한 줄로 이어 붙이면 울타리가 아니라 낱개 상자가 줄지어
+ * 선 것으로 보였다. 윗선만 울퉁불퉁하게 두고 좌우는 타일 끝까지 채워야 옆
+ * 타일과 이어져 한 줄의 울타리가 된다.
+ */
 function drawHedge(): Bitmap {
   const c = new Canvas(16, 16);
-  baseShadow(c, 8, 14, 7);
-  c.rect(0, 4, 16, 10, LEAF.mid);
-  c.rect(0, 4, 16, 2, LEAF.light);
-  c.rect(0, 11, 16, 2, LEAF.dark);
+  baseShadow(c, 8, 14, 8);
   for (let x = 0; x < 16; x += 1) {
-    if (noise(x * 7, 3) > 0.6) c.px(x, 3, LEAF.light);
-    if (noise(x * 5, 9) > 0.7) c.px(x, 8, LEAF.light);
-    if (noise(x * 3, 2) < 0.3) c.px(x, 10, LEAF.deep);
+    const top = noise(x * 13, 3) > 0.55 ? 4 : 5;
+    for (let y = top; y <= 13; y += 1) {
+      const d = (x - 3) * 0.25 + (y - top) * 1.1;
+      c.px(x, y, d < 2 ? LEAF.light : d > 7 ? LEAF.dark : LEAF.mid);
+    }
+    c.px(x, top, BASE.outline);
+    c.px(x, 13, BASE.outline);
+    if (noise(x * 7, 11) > 0.82) c.px(x, top + 3, LEAF.light);
   }
-  c.hLine(0, 3, 16, BASE.outline);
-  c.hLine(0, 13, 16, BASE.outline);
   return c.toBitmap();
 }
 
