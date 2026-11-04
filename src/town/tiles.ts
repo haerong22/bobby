@@ -15,9 +15,9 @@ export const TILESET = {
   name: "town",
   image: "/town/tilesets/town.png",
   imageWidth: 128,
-  imageHeight: 64,
+  imageHeight: 96,
   columns: 8,
-  tileCount: 26,
+  tileCount: 46,
   spacing: 0,
   margin: 0,
 } as const;
@@ -58,7 +58,25 @@ export const T = {
   rampN: 23,
   rampS: 24,
   grassFlip: 25,
+  /**
+   * 흙 오솔길 오토타일 16 장의 **첫 인덱스**. 실제 타일은
+   * `dirtTile(mask)` 로 고른다 (N=1 · E=2 · S=4 · W=8).
+   */
+  dirt0: 26,
+  grassShade: 42,
+  grassDry: 43,
+  grassWeed: 44,
+  grassPebble: 45,
 } as const;
+
+/** 이웃이 이어진 방향. 흙길 오토타일의 마스크 비트. */
+export const DIRT_N = 1;
+export const DIRT_E = 2;
+export const DIRT_S = 4;
+export const DIRT_W = 8;
+
+/** 이웃 마스크(0~15)로 흙길 타일 인덱스를 고른다. */
+export const dirtTile = (mask: number) => T.dirt0 + (mask & 15);
 
 /** 지면은 전부 걸어 다닐 수 있다. 막는 것은 건물과 소품뿐이다. */
 export const GRASS_VARIANTS = [
@@ -66,7 +84,18 @@ export const GRASS_VARIANTS = [
   T.grassAlt,
   T.grassAlt2,
   T.grassFlip,
+  T.grassWeed,
+  T.grassPebble,
 ] as const;
+
+/**
+ * 나무 밑과 공원 속. **묶음 안의 톤은 서로 가까워야 한다** — 밝은 잔디와 어두운
+ * 잔디를 한 묶음에 넣고 칸마다 뽑으면 체크무늬가 된다.
+ */
+export const SHADE_VARIANTS = [T.grassShade, T.grassShade, T.grassWeed] as const;
+
+/** 마을 바깥 들판. 마른 풀을 섞어 안쪽 잔디와 구별한다. */
+export const DRY_VARIANTS = [T.grassDry, T.grassDry, T.grassPebble] as const;
 
 export const FLOWER_VARIANTS = [
   T.flowers,

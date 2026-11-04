@@ -150,11 +150,124 @@ const PACKED: Bitmap[] = [
   flipY(take("grass1")), // 25  잔디 변형 하나 더 (반복 티 줄이기)
 ];
 
+// ── 직접 그려 붙이는 타일 ────────────────────────────────────────────────
+/**
+ * **원본에 없는 두 가지를 그려 넣는다.**
+ *
+ * 1. 흙 오솔길 — 원본의 순환은 아스팔트 하나뿐이라 마을이 격자로만 읽힌다.
+ *    차가 다니는 길과 사람이 다니는 길을 나누면 격자가 풀린다.
+ * 2. 잔디 변형 — 원본 잔디 세 장은 거의 같은 초록이라 넓게 깔면 단색 벌판이
+ *    된다. 그늘 · 마른 풀 · 잡초로 톤을 벌린다.
+ *
+ * 색은 원본 잔디에서 뽑아 파생하므로 Cozy 팔레트를 벗어나지 않는다.
+ */
+const rnd = (x: number, y: number, seed = 0) => {
+  const n = Math.sin((x + seed * 31.7) * 127.1 + (y + seed * 11.3) * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+};
+
+const readPx = (tile: Bitmap, x: number, y: number) => {
+  const i = (y * TILE + x) * 4;
+  return [tile.pixels[i]!, tile.pixels[i + 1]!, tile.pixels[i + 2]!] as const;
+};
+const writePx = (tile: Bitmap, x: number, y: number, rgb: readonly number[]) => {
+  if (x < 0 || y < 0 || x >= TILE || y >= TILE) return;
+  const i = (y * TILE + x) * 4;
+  tile.pixels[i] = rgb[0]!;
+  tile.pixels[i + 1] = rgb[1]!;
+  tile.pixels[i + 2] = rgb[2]!;
+  tile.pixels[i + 3] = 255;
+};
+const clone = (tile: Bitmap): Bitmap => ({
+  width: TILE,
+  height: TILE,
+  pixels: new Uint8Array(tile.pixels),
+});
+const shift = (rgb: readonly number[], mul: readonly number[]) =>
+  rgb.map((v, i) => Math.max(0, Math.min(255, Math.round(v * mul[i]!))));
+
+const GRASS = take("grass1");
+
+/** 잔디를 색만 옮긴 변형. 디테일을 얹어 반복 티를 줄인다. */
+function grassVariant(
+  mul: readonly number[],
+  speck: readonly number[] | null,
+  seed: number,
+): Bitmap {
+  const tile = clone(GRASS);
+  for (let y = 0; y < TILE; y += 1) {
+    for (let x = 0; x < TILE; x += 1) {
+      writePx(tile, x, y, shift(readPx(tile, x, y), mul));
+    }
+  }
+  if (speck) {
+    for (let y = 0; y < TILE; y += 1) {
+      for (let x = 0; x < TILE; x += 1) {
+        if (rnd(x, y, seed) > 0.93) writePx(tile, x, y, speck);
+      }
+    }
+  }
+  return tile;
+}
+
+const DIRT = {
+  mid: [0xae, 0x8f, 0x66],
+  light: [0xc6, 0xa9, 0x7f],
+  dark: [0x8a, 0x71, 0x4f],
+  stone: [0x9d, 0x92, 0x7e],
+} as const;
+
+/**
+ * 흙길 오토타일. 마스크는 이웃 네 방향 (N=1 · E=2 · S=4 · W=8).
+ *
+ * 이어진 변은 타일 끝까지 흙을 채우고, 끊긴 변은 **들쭉날쭉한 경계**로 잔디에
+ * 녹인다. 직선으로 자르면 길이 아니라 갈색 띠로 보인다.
+ */
+function dirtTile(mask: number): Bitmap {
+  const tile = clone(GRASS);
+  const open = (bit: number) => (mask & bit) !== 0;
+  // 끊긴 변은 3~5px 들어오고, 그 양을 좌표마다 흔든다.
+  const inset = (bit: number, along: number, seed: number) =>
+    open(bit) ? 0 : 3 + Math.round(rnd(along, bit, seed) * 2);
+
+  for (let y = 0; y < TILE; y += 1) {
+    for (let x = 0; x < TILE; x += 1) {
+      const n = inset(1, x, 1);
+      const e = inset(2, y, 2);
+      const s = inset(4, x, 3);
+      const w = inset(8, y, 4);
+      if (y < n || y >= TILE - s || x < w || x >= TILE - e) continue;
+
+      const edge =
+        y < n + 1 || y >= TILE - s - 1 || x < w + 1 || x >= TILE - e - 1;
+      const r = rnd(x, y, 7);
+      const tone = edge
+        ? DIRT.dark
+        : r > 0.93
+          ? DIRT.stone
+          : r > 0.6
+            ? DIRT.light
+            : DIRT.mid;
+      writePx(tile, x, y, tone);
+    }
+  }
+  return tile;
+}
+
+const DRAWN: Bitmap[] = [
+  ...Array.from({ length: 16 }, (_, mask) => dirtTile(mask)), // 26..41
+  grassVariant([0.8, 0.85, 0.78], null, 11), //  42 그늘진 잔디
+  grassVariant([1.1, 1.04, 0.84], null, 12), //  43 마른 잔디
+  grassVariant([1, 1, 1], [0x4d, 0x84, 0x50], 13), //  44 잡초가 돋은 잔디
+  grassVariant([0.96, 0.98, 0.96], [0x9d, 0x92, 0x7e], 14), //  45 자갈 섞인 잔디
+];
+
 const TILESET_COLUMNS = 8;
+const ALL = [...PACKED, ...DRAWN];
 writeFileSync(
   resolve(ROOT, "public/town/tilesets/town.png"),
-  encodePng(packTiles(PACKED, TILESET_COLUMNS)),
+  encodePng(packTiles(ALL, TILESET_COLUMNS)),
 );
 console.log(
-  `wrote town.png (${PACKED.length} tiles, ${TILESET_COLUMNS} columns)`,
+  `wrote town.png (${ALL.length} tiles = 원본 파생 ${PACKED.length} + 직접 그림 ${DRAWN.length}, ${TILESET_COLUMNS} columns)`,
 );
