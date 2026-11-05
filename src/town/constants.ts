@@ -61,8 +61,8 @@ export const ROADS = {
     { from: 27, to: 29, paved: false },
   ],
   vertical: [
-    { from: 16, to: 17, paved: false },
-    { from: 31, to: 33, paved: false },
+    { from: 21, to: 23, paved: false }, // 세로 큰길
+    { from: 46, to: 47, paved: false }, // 골목
   ],
 } as const;
 
@@ -76,21 +76,22 @@ export const ROADS = {
  * 세로 큰길을 하나 덜어 낸 자리(동쪽)를 이 길이 대신 잇는다.
  */
 export const TRAILS: readonly (readonly { x: number; y: number }[])[] = [
-  // 큰길 → 가게 뒤 녹지 → 광장 서쪽
-  [{ x: 22, y: 16 }, { x: 22, y: 21 }, { x: 28, y: 21 }, { x: 28, y: 24 }],
+  // 큰길 → 공방과 도서관 사이 → 아래 길
+  [{ x: 10, y: 16 }, { x: 10, y: 26 }],
+  // 광장 옆 녹지를 세로로 가른다
+  [{ x: 42, y: 16 }, { x: 42, y: 26 }],
   // 광장 남쪽 → 들판을 지그재그로 가로질러 서쪽 끝까지
   [
-    { x: 41, y: 26 }, { x: 41, y: 32 }, { x: 35, y: 32 }, { x: 35, y: 35 },
-    { x: 27, y: 35 }, { x: 27, y: 33 }, { x: 20, y: 33 }, { x: 20, y: 36 },
-    { x: 12, y: 36 }, { x: 12, y: 33 }, { x: 5, y: 33 }, { x: 5, y: 30 },
+    { x: 32, y: 26 }, { x: 32, y: 33 }, { x: 24, y: 33 }, { x: 24, y: 36 },
+    { x: 14, y: 36 }, { x: 14, y: 33 }, { x: 6, y: 33 }, { x: 6, y: 30 },
   ],
-  // 들판 → 동쪽 공원 (없앤 세로 큰길을 대신한다)
+  // 들판 → 동쪽 공원
   [
-    { x: 41, y: 32 }, { x: 47, y: 32 }, { x: 47, y: 36 }, { x: 56, y: 36 },
-    { x: 56, y: 22 }, { x: 50, y: 22 },
+    { x: 32, y: 33 }, { x: 40, y: 33 }, { x: 40, y: 36 }, { x: 52, y: 36 },
+    { x: 52, y: 22 }, { x: 49, y: 22 },
   ],
   // 동쪽 공원을 가로지르는 짧은 줄기
-  [{ x: 56, y: 27 }, { x: 62, y: 27 }],
+  [{ x: 52, y: 27 }, { x: 62, y: 27 }],
 ] as const;
 
 /**
@@ -110,7 +111,7 @@ export const PLOTS = [
  * 마을에 **초점이 하나는 있어야 한다.** 없으면 아무리 채워도 건물이 흩어진
  * 벌판으로 보인다. 큰길 둘과 세로 큰길이 만나는 모서리에 둔다.
  */
-export const PLAZA = { x: 35, y: 16, w: 13, h: 11 } as const;
+export const PLAZA = { x: 26, y: 16, w: 13, h: 11 } as const;
 
 /**
  * 꽃이 흩어지고 나무가 빽빽한 구역.
@@ -119,11 +120,12 @@ export const PLAZA = { x: 35, y: 16, w: 13, h: 11 } as const;
  * 나무 밀집" 으로 표시한다. 건물과 주민 순찰 경로를 피해 배치했다.
  */
 export const PARKS = [
-  { x: 49, y: 15, w: 14, h: 13, grove: true }, // 동쪽 공원
-  { x: 52, y: 1, w: 11, h: 10, grove: true }, // 북동쪽 숲
-  { x: 19, y: 16, w: 11, h: 11, grove: true }, // 가게 뒤 녹지
-  { x: 0, y: 0, w: 7, h: 5, grove: true }, // 집 뒤 숲
-  { x: 0, y: 16, w: 8, h: 4, grove: true }, // 공방 뒤 숲
+  { x: 49, y: 15, w: 15, h: 13, grove: true }, // 동쪽 공원
+  { x: 56, y: 1, w: 8, h: 10, grove: true }, // 북동쪽 숲
+  { x: 39, y: 16, w: 7, h: 11, grove: true }, // 광장 옆 녹지
+  { x: 41, y: 1, w: 5, h: 10, grove: true }, // 회사 옆 녹지
+  { x: 0, y: 0, w: 8, h: 4, grove: true }, // 집 뒤 숲
+  { x: 0, y: 15, w: 11, h: 5, grove: true }, // 공방 뒤 녹지
   // 들판은 성글어야 한다. 공원과 같은 밀도로 심으면 마을 남쪽이 통째로 숲이 된다.
   { x: 1, y: 31, w: 62, h: 8, grove: false }, // 남쪽 들판
 ] as const;
@@ -155,7 +157,7 @@ export function parkAt(x: number, y: number): boolean {
 }
 
 /** 시작 지점 — 집 앞 길 (타일 단위) */
-export const SPAWN_TILE = { x: 6, y: 10 } as const;
+export const SPAWN_TILE = { x: 7, y: 9 } as const;
 
 export const COLORS = {
   ground: 0x1b1e26,
