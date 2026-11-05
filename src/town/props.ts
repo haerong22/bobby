@@ -1,5 +1,5 @@
 import { BUILDINGS, doorTile } from "./buildings";
-import { MAP_TILES, PARKS, PLAZA, ROADS } from "./constants";
+import { MAP_TILES, parkAt, PARKS, PLAZA, PLOTS, ROADS, TRAILS } from "./constants";
 import { NPCS } from "./npcs";
 
 /**
@@ -81,6 +81,19 @@ for (const building of BUILDINGS) {
   }
 }
 
+/** 흙 오솔길. 길 한가운데 나무가 서면 길이 끊긴다. */
+const onTrail = new Set<string>();
+for (const line of TRAILS) {
+  for (let i = 1; i < line.length; i += 1) {
+    const a = line[i - 1]!;
+    const b = line[i]!;
+    const sx = Math.sign(b.x - a.x);
+    const sy = Math.sign(b.y - a.y);
+    for (let x = a.x; sx !== 0 && x !== b.x + sx; x += sx) onTrail.add(`${x},${a.y}`);
+    for (let y = a.y; sy !== 0 && y !== b.y + sy; y += sy) onTrail.add(`${b.x},${y}`);
+  }
+}
+
 /** 주민 순찰로. 소품이 올라가면 주민이 길에 갇힌다. */
 const npcPath = new Set<string>();
 for (const npc of NPCS) {
@@ -101,6 +114,7 @@ function footBlocked(x: number, y: number, w: number) {
     if (within(ROADS.horizontal, y) || within(ROADS.vertical, tx)) return true;
     if (npcPath.has(`${tx},${y}`)) return true;
     if (doorApron.has(`${tx},${y}`)) return true;
+    if (onTrail.has(`${tx},${y}`)) return true;
     const onBuilding = BUILDINGS.some(
       (b) => tx >= b.x && tx < b.x + b.w && y >= b.y && y < b.y + b.h,
     );
@@ -164,22 +178,25 @@ export function computeProps(): PropPlacement[] {
   add("flower-bed", fx, pb - 1);
 
   // ── 길을 따라 가로수와 가로등 ──────────────────────────────────────
+  // 가로등은 일정 간격으로 — 조명은 규칙적인 게 맞다.
+  // 가로수는 **두세 그루씩 묶고 사이를 띄운다.** 등간격으로 심으면 메트로놈처럼
+  // 보여서 길이 아니라 자로 그은 선이 된다.
   for (const band of ROADS.horizontal) {
-    // 북쪽 연석: 나무와 가로등을 번갈아. 수관이 보도 위로 올라간다.
-    let slot = 0;
-    for (let x = 2; x < MAP_TILES.w - 2; x += 3) {
+    for (let x = 4; x < MAP_TILES.w - 2; x += 7) {
       if (nearVertical(x)) continue;
-      if (slot % 2 === 0) add(x % 7 === 0 ? "tree-b" : "tree-a", x, band.from - 1);
-      else add("lamppost", x, band.from - 1);
-      slot += 1;
+      add("lamppost", x, band.from - 1);
+      add("lamppost", x + 3, band.to + 1);
     }
-    // 남쪽: 나무는 두 칸 내려 심어야 수관이 도로를 덮지 않는다.
-    slot = 0;
-    for (let x = 3; x < MAP_TILES.w - 2; x += 3) {
+    for (let x = 2; x < MAP_TILES.w - 3; x += 3) {
       if (nearVertical(x)) continue;
-      if (slot % 2 === 1) add("lamppost", x, band.to + 1);
-      else add(x % 5 === 0 ? "tree-b" : "tree-a", x, band.to + 3);
-      slot += 1;
+      // 세 칸 중 두 칸만 심어 리듬을 흔든다.
+      if (noise(x * 13, band.from) < 0.34) continue;
+      add(x % 7 === 0 ? "tree-b" : "tree-a", x, band.from - 1);
+    }
+    for (let x = 3; x < MAP_TILES.w - 3; x += 3) {
+      if (nearVertical(x)) continue;
+      if (noise(x * 17, band.to) < 0.34) continue;
+      add(x % 5 === 0 ? "tree-b" : "tree-a", x, band.to + 3);
     }
   }
 
@@ -188,7 +205,8 @@ export function computeProps(): PropPlacement[] {
       let slot = 0;
       for (let y = 3; y < MAP_TILES.h - 2; y += 4) {
         if (nearHorizontal(y)) continue;
-        add(slot % 2 === 0 ? "lamppost" : "tree-b", col, y);
+        if (slot % 2 === 0) add("lamppost", col, y);
+        else if (noise(col, y * 19) > 0.3) add("tree-b", col, y);
         slot += 1;
       }
     }
@@ -201,9 +219,11 @@ export function computeProps(): PropPlacement[] {
 
     // 숲은 빽빽하게, 들판은 성글게. 같은 밀도로 심으면 마을 밖이 통째로 숲이 된다.
     const treeAt = park.grove ? 0.86 : 0.95;
-    for (let y = park.y + 1; y <= bottom; y += 1) {
-      for (let x = park.x; x <= right - 1; x += 1) {
-        if (inPlaza(x, y)) continue;
+    // 가장자리 두 칸을 넓게 돌면서 parkAt 으로 다시 거른다 — 나무가 직사각형
+    // 경계에서 뚝 끊기지 않고 밖으로 번진다.
+    for (let y = park.y - 1; y <= bottom + 2; y += 1) {
+      for (let x = park.x - 2; x <= right + 1; x += 1) {
+        if (inPlaza(x, y) || !parkAt(x, y)) continue;
         const n = noise(x * 5, y * 5);
         if (n > treeAt) add(n > treeAt + 0.04 ? "tree-b" : "tree-a", x, y);
         else if (n < (park.grove ? 0.1 : 0.05)) add("bush", x, y);
@@ -223,6 +243,33 @@ export function computeProps(): PropPlacement[] {
     // 길가에 걸리면 보도 한복판에 울타리가 서 버린다.
     if (nearHorizontal(top)) continue;
     for (let x = b.x - 1; x <= b.x + b.w; x += 1) add("hedge", x, top);
+  }
+
+  // ── 들판의 텃밭 ────────────────────────────────────────────────────
+  // **생울타리는 가로줄에만 쓴다.** 세로로 쌓으면 타일마다 윗선이 생겨 울타리가
+  // 아니라 토막 난 막대로 보인다. 좌우는 터 두고 안에 화단을 줄로 심는다.
+  for (const plot of PLOTS) {
+    const bottom = plot.y + plot.h - 1;
+    for (let x = plot.x; x < plot.x + plot.w; x += 1) {
+      add("hedge", x, plot.y);
+      add("hedge", x, bottom);
+    }
+    for (let y = plot.y + 1; y < bottom; y += 1) {
+      for (let x = plot.x + 1; x < plot.x + plot.w - 1; x += 3) {
+        add("flower-bed", x, y);
+      }
+    }
+  }
+
+  // ── 오솔길 가장자리 ────────────────────────────────────────────────
+  // 길섶에 관목을 성글게 두면 길이 잔디에 묻히지 않는다.
+  for (const key of onTrail) {
+    const [tx, ty] = key.split(",").map(Number) as [number, number];
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+      if (onTrail.has(`${tx + dx},${ty + dy}`)) continue;
+      if (noise((tx + dx) * 23, (ty + dy) * 29) < 0.86) continue;
+      add("bush", tx + dx, ty + dy);
+    }
   }
 
   // ── 맵 가장자리는 숲으로. 북쪽은 건물 줄이 가장자리라 건너뛴다 ──────

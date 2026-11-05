@@ -13,8 +13,20 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { BUILDINGS, doorTile } from "../src/town/buildings.ts";
-import { MAP_TILES, PARKS, PLAZA, ROADS } from "../src/town/constants.ts";
-import { FLOWER_VARIANTS, GRASS_VARIANTS, T, TILESET } from "../src/town/tiles.ts";
+import { MAP_TILES, parkAt, PLAZA, ROADS, TRAILS } from "../src/town/constants.ts";
+import {
+  DIRT_E,
+  DIRT_N,
+  DIRT_S,
+  DIRT_W,
+  dirtTile,
+  DRY_VARIANTS,
+  FLOWER_VARIANTS,
+  GRASS_VARIANTS,
+  SHADE_VARIANTS,
+  T,
+  TILESET,
+} from "../src/town/tiles.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = resolve(ROOT, "public/town/maps/city.tmj");
@@ -49,12 +61,6 @@ const within = (bands: readonly Band[], v: number) =>
 const onRoad = (x: number, y: number) =>
   within(ROADS.horizontal, y) || within(ROADS.vertical, x);
 
-const inPark = (x: number, y: number) =>
-  PARKS.some(
-    (park) =>
-      x >= park.x && x < park.x + park.w && y >= park.y && y < park.y + park.h,
-  );
-
 // ── ground ──────────────────────────────────────────────────────────────
 /**
  * **지면 기본은 잔디다.**
@@ -73,40 +79,88 @@ const pave = (x: number, y: number) => {
 const isPaved = (x: number, y: number) =>
   x >= 0 && y >= 0 && x < W && y < H && paved[y * W + x] === true;
 
-// 길 양옆 보도 두 줄. 한 줄이면 가로수를 심는 순간 사람이 지나갈 데가 없다.
-const WALK = 2;
+/**
+ * 길 양옆 보도. 한 줄이면 가로수를 심는 순간 사람이 지나갈 데가 없어 두 줄이다.
+ *
+ * **다만 맵 끝까지 깔지 않는다.** 길을 따라 보도를 쭉 깔았더니 베이지 띠가
+ * 맵을 가로질러 초록을 전부 직사각형으로 잘라 버렸다. 실제 마을은 시가지를
+ * 벗어나면 포장이 끊기고 길이 바로 풀밭에 닿는다. 그래서 `BUILT` 안에서만
+ * 두 줄, 가장자리 네 칸은 한 줄로 좁히다가 끊는다.
+ */
+const BUILT = { x0: 0, x1: 56, y0: 7, y1: 31 } as const;
+const TAPER = 4;
+
+/** 시가지 끝에서 보도 폭을 2 → 1 → 0 으로 줄여 끊는다. */
+const walkWidth = (v: number, lo: number, hi: number) => {
+  if (v < lo - TAPER || v > hi + TAPER) return 0;
+  if (v < lo || v > hi) return 1;
+  return 2;
+};
+
 for (const band of ROADS.horizontal) {
+  if (!band.paved) continue;
   for (let x = 0; x < W; x += 1) {
-    for (let i = 1; i <= WALK; i += 1) {
+    const width = walkWidth(x, BUILT.x0, BUILT.x1);
+    for (let i = 1; i <= width; i += 1) {
       pave(x, band.from - i);
       pave(x, band.to + i);
     }
   }
 }
 for (const band of ROADS.vertical) {
+  if (!band.paved) continue;
   for (let y = 0; y < H; y += 1) {
-    for (let i = 1; i <= WALK; i += 1) {
+    const width = walkWidth(y, BUILT.y0, BUILT.y1);
+    for (let i = 1; i <= width; i += 1) {
       pave(band.from - i, y);
       pave(band.to + i, y);
     }
   }
 }
 
-// 광장.
+// 광장. 가장자리 한 줄은 잡음으로 갉아 직사각형 티를 뺀다.
 for (let y = PLAZA.y; y < PLAZA.y + PLAZA.h; y += 1) {
-  for (let x = PLAZA.x; x < PLAZA.x + PLAZA.w; x += 1) pave(x, y);
+  for (let x = PLAZA.x; x < PLAZA.x + PLAZA.w; x += 1) {
+    const rim =
+      x === PLAZA.x ||
+      y === PLAZA.y ||
+      x === PLAZA.x + PLAZA.w - 1 ||
+      y === PLAZA.y + PLAZA.h - 1;
+    if (rim && noise(x * 5.1, y * 3.7) < 0.45) continue;
+    pave(x, y);
+  }
 }
 
-// 건물 앞마당 — 발자국에 한 칸 두른다. 잔디에서 벽이 바로 솟으면 떠 보인다.
+// 건물 앞마당 — 발자국 **아래 한 줄만** 깐다. 사방에 두르면 앞마당끼리 붙어
+// 북쪽 전체가 베이지 벌판이 된다.
 for (const b of BUILDINGS) {
-  for (let y = b.y - 1; y <= b.y + b.h; y += 1) {
-    for (let x = b.x - 1; x <= b.x + b.w; x += 1) pave(x, y);
-  }
-  // 문에서 길까지 이어지는 오솔길.
+  for (let x = b.x; x < b.x + b.w; x += 1) pave(x, b.y + b.h);
+  // 문에서 길까지 이어지는 오솔길. 전면선이 들쭉날쭉해 길이마다 다르다.
   const door = doorTile(b);
   for (let y = door.y; y < H; y += 1) {
     pave(door.x, y);
     if (onRoad(door.x, y) || isPaved(door.x, y + 1)) break;
+  }
+}
+
+// ── 흙 오솔길 ───────────────────────────────────────────────────────────
+// 대각선 타일이 없으므로 꺾은선의 각 구간을 ㄱ 자(가로 → 세로)로 깐다.
+const trail: boolean[] = new Array(W * H).fill(false);
+const isTrail = (x: number, y: number) =>
+  x >= 0 && y >= 0 && x < W && y < H && trail[y * W + x] === true;
+const walk = (x: number, y: number) => {
+  if (x < 0 || y < 0 || x >= W || y >= H) return;
+  if (onRoad(x, y) || isPaved(x, y)) return;
+  trail[y * W + x] = true;
+};
+for (const line of TRAILS) {
+  for (let i = 1; i < line.length; i += 1) {
+    const a = line[i - 1]!;
+    const b = line[i]!;
+    const stepX = Math.sign(b.x - a.x);
+    const stepY = Math.sign(b.y - a.y);
+    for (let x = a.x; x !== b.x + stepX && stepX !== 0; x += stepX) walk(x, a.y);
+    for (let y = a.y; y !== b.y + stepY && stepY !== 0; y += stepY) walk(b.x, y);
   }
 }
 
@@ -120,10 +174,27 @@ for (let y = 0; y < H; y += 1) {
       else put(ground, x, y, n > 0.5 ? T.asphalt : T.asphaltAlt);
     } else if (isPaved(x, y)) {
       put(ground, x, y, T.sidewalk);
+    } else if (isTrail(x, y)) {
+      const mask =
+        (isTrail(x, y - 1) ? DIRT_N : 0) |
+        (isTrail(x + 1, y) ? DIRT_E : 0) |
+        (isTrail(x, y + 1) ? DIRT_S : 0) |
+        (isTrail(x - 1, y) ? DIRT_W : 0);
+      put(ground, x, y, dirtTile(mask));
     } else {
+      // 잔디를 세 구역으로 나눈다 — 공원 속은 그늘지게, 마을 밖은 마르게.
+      //
+      // **구역 판정은 저주파로 한다.** 칸마다 뽑으면 밝은 잔디와 어두운 잔디가
+      // 한 칸씩 번갈아 체크무늬가 된다. 네 칸짜리 셀 단위로 정해야 넓은 뙈기로
+      // 번져 풀밭처럼 보인다.
       const n = noise(x * 3, y * 3);
-      const flowery = inPark(x, y) && n > 0.82;
-      put(ground, x, y, flowery ? pick(FLOWER_VARIANTS, x, y) : pick(GRASS_VARIANTS, x, y));
+      const cell = noise(Math.floor(x / 4) * 3.1, Math.floor(y / 4) * 3.1);
+      const park = parkAt(x, y);
+      const outside = y >= 31 || y <= 1 || x <= 1 || x >= W - 2;
+      if (park && n > 0.86) put(ground, x, y, pick(FLOWER_VARIANTS, x, y));
+      else if (park && cell > 0.38) put(ground, x, y, pick(SHADE_VARIANTS, x, y));
+      else if (outside && cell > 0.45) put(ground, x, y, pick(DRY_VARIANTS, x, y));
+      else put(ground, x, y, pick(GRASS_VARIANTS, x, y));
     }
   }
 }
@@ -132,7 +203,7 @@ for (let y = 0; y < H; y += 1) {
 const hard = (x: number, y: number) => onRoad(x, y) || isPaved(x, y);
 for (let y = 0; y < H; y += 1) {
   for (let x = 0; x < W; x += 1) {
-    if (hard(x, y)) continue;
+    if (hard(x, y) || isTrail(x, y)) continue;
     if (hard(x, y - 1)) put(ground, x, y, T.grassEdgeTop);
     else if (hard(x, y + 1)) put(ground, x, y, T.grassEdgeBottom);
     else if (hard(x - 1, y)) put(ground, x, y, T.grassEdgeLeft);
