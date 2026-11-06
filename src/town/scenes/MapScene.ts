@@ -76,9 +76,13 @@ export class MapScene extends Phaser.Scene {
     this.npcs = NPCS.map((data) => new Npc(this, data));
     this.physics.add.collider(this.player, this.npcs);
 
-    // 차는 충돌시키지 않는다 — 움직이는 immovable 은 플레이어를 건물 앞면에
-    // 밀어붙여 가둘 수 있다 (cars.ts 참고).
+    // 차는 collider 가 아니라 overlap 이다 — 밀어내지 않고 겹친 순간에만
+    // 알린다. collider 로 걸면 움직이는 immovable 이 플레이어를 건물 앞면에
+    // 밀어붙여 가둘 수 있다.
     this.cars = LANES.map((lane) => new Car(this, lane));
+    this.physics.add.overlap(this.player, this.cars, (_player, car) =>
+      this.hitByCar(car as Car),
+    );
 
     this.drawLabels();
     this.createMarker();
@@ -122,6 +126,29 @@ export class MapScene extends Phaser.Scene {
     for (const npc of this.npcs) npc.update();
     for (const car of this.cars) car.update(delta);
     this.syncInteractTarget();
+  }
+
+  /** 차에 치였을 때. 진행 방향으로 날리고 옆으로도 밀어 길 밖으로 내보낸다. */
+  private hitByCar(car: Car) {
+    if (this.paused || !this.player.hittable) return;
+
+    const ALONG = 300;
+    const ASIDE = 210;
+    const away = (a: number, b: number) =>
+      a === b ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(a - b);
+
+    if (car.info.axis === "x") {
+      this.player.knockBack(
+        ALONG * car.info.dir,
+        ASIDE * away(this.player.y, car.y),
+      );
+    } else {
+      this.player.knockBack(
+        ASIDE * away(this.player.x, car.x),
+        ALONG * car.info.dir,
+      );
+    }
+    this.cameras.main.shake(140, 0.009);
   }
 
   private fitCameraToCanvas() {

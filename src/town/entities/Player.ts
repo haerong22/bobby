@@ -14,10 +14,19 @@ type Direction = Facing;
  */
 const BODY = { w: 8, h: 6, offsetX: 4, offsetY: 17 } as const;
 
+/** 차에 치였을 때 튕겨 나가는 시간 (ms). 이 동안 입력을 받지 않는다. */
+const KNOCK_MS = 520;
+/** 일어난 직후 다시 치이지 않게 두는 무적 시간 (ms). */
+const GRACE_MS = 500;
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd?: Record<Direction, Phaser.Input.Keyboard.Key>;
   private facing: Direction = "down";
+  /** 이 시각까지는 튕겨 나가는 중이라 입력을 무시한다. */
+  private knockedUntil = 0;
+  /** 이 시각까지는 다시 치이지 않는다. */
+  private safeUntil = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, PLAYER_SPRITE.key, IDLE_DOWN_FRAME);
@@ -29,6 +38,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       .setSize(BODY.w, BODY.h)
       .setOffset(BODY.offsetX, BODY.offsetY);
     this.arcadeBody.setCollideWorldBounds(true);
+    // 평소에는 매 프레임 속도를 직접 넣으므로 감속이 보이지 않는다.
+    // 튕겨 나가는 동안에만 이 감속이 일한다.
+    this.arcadeBody.setDrag(420, 420);
+    this.arcadeBody.setBounce(0.4, 0.4);
     this.play(animKey(PLAYER_SPRITE.key, "idle", "down"));
 
     const keyboard = scene.input.keyboard;
@@ -73,10 +86,39 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   /** 모달이 열린 동안 호출한다. 멈추지 않으면 마지막 속도로 계속 미끄러진다. */
   halt() {
     this.arcadeBody.setVelocity(0, 0);
+    this.knockedUntil = 0;
+    this.setAngle(0);
+    this.play(animKey(PLAYER_SPRITE.key, "idle", this.facing), true);
+  }
+
+  /** 지금 차에 치일 수 있는 상태인가. */
+  get hittable() {
+    return this.scene.time.now >= this.safeUntil;
+  }
+
+  /**
+   * 차에 치여 튕겨 나간다.
+   *
+   * 속도만 주고 **입력을 잠깐 끊는다.** 안 끊으면 다음 프레임에 `update` 가
+   * 입력으로 속도를 덮어써서 전혀 날아가지 않는다. 감속은 drag 가 맡는다.
+   */
+  knockBack(vx: number, vy: number) {
+    const now = this.scene.time.now;
+    this.arcadeBody.setVelocity(vx, vy);
+    this.knockedUntil = now + KNOCK_MS;
+    this.safeUntil = now + KNOCK_MS + GRACE_MS;
     this.play(animKey(PLAYER_SPRITE.key, "idle", this.facing), true);
   }
 
   update() {
+    // 튕겨 나가는 동안은 입력을 받지 않는다. 속도는 drag 가 깎아 준다.
+    if (this.scene.time.now < this.knockedUntil) {
+      this.setAngle(this.angle + 18);
+      this.setDepth(this.arcadeBody.bottom);
+      return;
+    }
+    if (this.angle !== 0) this.setAngle(0);
+
     const touch = readTouchAxis();
     let x = touch.x;
     let y = touch.y;
