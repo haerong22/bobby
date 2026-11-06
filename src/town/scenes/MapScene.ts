@@ -2,6 +2,7 @@ import Phaser from "phaser";
 
 import type { BuildingId } from "../buildings";
 import { BUILDINGS, buildingTexture, doorTile } from "../buildings";
+import { LANES } from "../cars";
 import {
   SPAWN_TILE,
   TEXT_RESOLUTION,
@@ -9,6 +10,7 @@ import {
   ZOOM,
   ZOOM_STORAGE_KEY,
 } from "../constants";
+import { Car } from "../entities/Car";
 import { Npc } from "../entities/Npc";
 import { Player } from "../entities/Player";
 import { EventBus } from "../EventBus";
@@ -35,6 +37,7 @@ export class MapScene extends Phaser.Scene {
 
   private player!: Player;
   private npcs: Npc[] = [];
+  private cars: Car[] = [];
   private marker!: Phaser.GameObjects.Text;
   private nearDoor: BuildingId | null = null;
   private nearNpc: Npc | null = null;
@@ -73,6 +76,10 @@ export class MapScene extends Phaser.Scene {
     this.npcs = NPCS.map((data) => new Npc(this, data));
     this.physics.add.collider(this.player, this.npcs);
 
+    // 차는 충돌시키지 않는다 — 움직이는 immovable 은 플레이어를 건물 앞면에
+    // 밀어붙여 가둘 수 있다 (cars.ts 참고).
+    this.cars = LANES.map((lane) => new Car(this, lane));
+
     this.drawLabels();
     this.createMarker();
 
@@ -105,7 +112,7 @@ export class MapScene extends Phaser.Scene {
     EventBus.emit("game:ready", { scene: MapScene.KEY });
   }
 
-  update() {
+  update(_time: number, delta: number) {
     if (this.paused) {
       this.player.halt();
       return;
@@ -113,6 +120,7 @@ export class MapScene extends Phaser.Scene {
 
     this.player.update();
     for (const npc of this.npcs) npc.update();
+    for (const car of this.cars) car.update(delta);
     this.syncInteractTarget();
   }
 

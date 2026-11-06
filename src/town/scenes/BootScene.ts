@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { BUILDINGS, buildingTexture } from "../buildings";
+import { CAR_TEXTURES } from "../cars";
 import { COLORS } from "../constants";
 import { NPC_TEXTURES } from "../npcs";
 import { PROP_TEXTURES } from "../props";
@@ -27,6 +28,9 @@ export class BootScene extends Phaser.Scene {
     }
     for (const texture of PROP_TEXTURES) {
       this.load.image(`prop-${texture}`, `/town/props/${texture}.png`);
+    }
+    for (const texture of CAR_TEXTURES) {
+      this.load.image(texture, `/town/props/${texture}.png`);
     }
     const frames = {
       frameWidth: CHARACTER_SHEET.frameWidth,
