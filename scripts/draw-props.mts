@@ -258,8 +258,117 @@ function drawHedge(): Bitmap {
   return c.toBitmap();
 }
 
+/**
+ * 자동차.
+ *
+ * 마을은 **섞인 시점**이다 — 건물은 정면도, 지면은 위에서 내려다본 것, 사람은
+ * 앞을 본다. 차도 그 중간으로 그린다: 지붕이 보이되 옆면과 바퀴도 같이 보이는
+ * 비스듬한 각도. 완전한 평면도로 그리면 지붕만 보여 건물 옆에서 겉돈다.
+ *
+ * 가로 도로용은 한 장만 그리고 반대 방향은 `setFlipX` 로 뒤집는다. 세로 도로는
+ * 앞뒤가 달라서 두 장을 따로 그린다.
+ */
+function carSide(body: number, bodyDark: number, bodyLight: number): Bitmap {
+  const c = new Canvas(32, 18);
+  const GLASS = 0x6f88a0;
+  const GLASS_LIGHT = 0xa9c0d4;
+  const TYRE = 0x2b2724;
+
+  baseShadow(c, 16, 16, 14);
+
+  // 바퀴가 차체보다 먼저 — 차체가 위를 덮어야 묻힌 것처럼 보인다
+  for (const wx of [5, 21]) {
+    c.rect(wx, 11, 6, 5, TYRE);
+    c.hLine(wx + 1, 12, 4, 0x4a4440);
+    c.outline(wx, 11, 6, 5, BASE.outline);
+  }
+
+  // 차체
+  c.rect(1, 6, 30, 7, body);
+  c.hLine(2, 6, 28, bodyLight);
+  c.hLine(2, 12, 28, bodyDark);
+  c.outline(1, 6, 30, 7, BASE.outline);
+
+  // 지붕과 유리
+  c.rect(8, 1, 15, 6, body);
+  c.hLine(9, 1, 13, bodyLight);
+  c.outline(8, 1, 15, 6, BASE.outline);
+  c.rect(10, 3, 5, 3, GLASS);
+  c.hLine(10, 3, 5, GLASS_LIGHT);
+  c.rect(17, 3, 4, 3, GLASS);
+  c.hLine(17, 3, 4, GLASS_LIGHT);
+
+  // 앞은 오른쪽 — 전조등과 후미등
+  c.rect(29, 8, 2, 2, BASE.lamp);
+  c.rect(1, 8, 2, 2, 0xc0493c);
+  c.px(16, 9, bodyDark);
+  return c.toBitmap();
+}
+
+function carFacing(
+  body: number,
+  bodyDark: number,
+  bodyLight: number,
+  facing: "up" | "down",
+): Bitmap {
+  const c = new Canvas(18, 32);
+  const GLASS = 0x6f88a0;
+  const GLASS_LIGHT = 0xa9c0d4;
+  const TYRE = 0x2b2724;
+
+  baseShadow(c, 9, 30, 8);
+
+  // 바퀴는 차체 **밖으로** 나와야 보인다. 차체 폭 안에 넣으면 1px 만 남는다.
+  for (const wy of [6, 21]) {
+    for (const wx of [0, 15]) {
+      c.rect(wx, wy, 3, 6, TYRE);
+      c.outline(wx, wy, 3, 6, BASE.outline);
+    }
+  }
+
+  c.rect(3, 2, 12, 28, body);
+  c.vLine(4, 3, 26, bodyLight);
+  c.vLine(13, 3, 26, bodyDark);
+  c.outline(3, 2, 12, 28, BASE.outline);
+
+  // 지붕
+  c.rect(4, 11, 10, 10, body);
+  c.vLine(5, 12, 8, bodyLight);
+  c.outline(4, 11, 10, 10, BASE.outline);
+
+  // 앞유리는 진행 방향 쪽, 뒷유리는 반대쪽
+  const front = facing === "down" ? 22 : 6;
+  const back = facing === "down" ? 7 : 23;
+  c.rect(5, front, 8, 4, GLASS);
+  c.hLine(5, front, 8, GLASS_LIGHT);
+  c.rect(6, back, 6, 3, GLASS);
+
+  // 전조등은 진행 방향 끝, 후미등은 반대쪽 끝
+  const headY = facing === "down" ? 28 : 2;
+  const tailY = facing === "down" ? 2 : 28;
+  for (const lx of [4, 11]) {
+    c.rect(lx, headY, 3, 2, BASE.lamp);
+    c.outline(lx, headY, 3, 2, BASE.outline);
+    c.rect(lx, tailY, 3, 2, 0xc0493c);
+  }
+  return c.toBitmap();
+}
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PROPS: Record<string, Bitmap> = {
+  // 색을 여러 벌 그려 둔다 — 한 바퀴 돌 때마다 다른 차가 들어오게 하려면
+  // 고를 수 있는 벌이 있어야 한다.
+  "car-red": carSide(0xc0493c, 0x8d3028, 0xd9705f),
+  "car-blue": carSide(0x4a7aa8, 0x335a80, 0x76a3cb),
+  "car-cream": carSide(0xe4d9bf, 0xb4a88c, 0xf5efdd),
+  "car-olive": carSide(0x6f8d6a, 0x4f6a4b, 0x95b08d),
+  "car-amber": carSide(0xd9a441, 0xa87a2c, 0xeec36e),
+  "car-down-amber": carFacing(0xd9a441, 0xa87a2c, 0xeec36e, "down"),
+  "car-down-blue": carFacing(0x4a7aa8, 0x335a80, 0x76a3cb, "down"),
+  "car-down-cream": carFacing(0xe4d9bf, 0xb4a88c, 0xf5efdd, "down"),
+  "car-up-olive": carFacing(0x6f8d6a, 0x4f6a4b, 0x95b08d, "up"),
+  "car-up-red": carFacing(0xc0493c, 0x8d3028, 0xd9705f, "up"),
+  "car-up-cream": carFacing(0xe4d9bf, 0xb4a88c, 0xf5efdd, "up"),
   "tree-a": drawTree(1),
   "tree-b": drawTree(5),
   bush: drawBush(),
