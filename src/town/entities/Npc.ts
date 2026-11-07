@@ -12,6 +12,15 @@ const BODY = { w: 8, h: 6, offsetX: 4, offsetY: 17 } as const;
 
 const center = (tile: number) => (tile + 0.5) * TILE;
 
+/**
+ * 세로는 타일 **중심**에 놓으면 안 된다.
+ *
+ * 충돌체가 발밑 6px 이라 스프라이트를 타일 중심에 두면 발은 한 칸 아래를 딛는다.
+ * 그대로 두면 `npcs.ts` 에 적은 좌표와 실제로 서는 칸이 한 줄 어긋나서, 말을
+ * 걸 수 있는 자리도 소품을 비워 둔 자리도 전부 밀린다.
+ */
+const footY = (tile: number) => tile * TILE + 4;
+
 export class Npc extends Phaser.Physics.Arcade.Sprite {
   /** `data` 는 Phaser GameObject 의 DataManager 라 가리면 안 된다. */
   readonly info: NpcData;
@@ -22,7 +31,7 @@ export class Npc extends Phaser.Physics.Arcade.Sprite {
   private frozen = false;
 
   constructor(scene: Phaser.Scene, data: NpcData) {
-    super(scene, center(data.from.x), center(data.from.y), data.texture, IDLE_DOWN_FRAME);
+    super(scene, center(data.from.x), footY(data.from.y), data.texture, IDLE_DOWN_FRAME);
     this.info = data;
 
     scene.add.existing(this);
@@ -34,8 +43,8 @@ export class Npc extends Phaser.Physics.Arcade.Sprite {
     // 플레이어가 밀고 다닐 수 있으면 순찰 경로를 벗어나 건물에 끼어 버린다.
     this.arcadeBody.setImmovable(true);
 
-    this.start = new Phaser.Math.Vector2(center(data.from.x), center(data.from.y));
-    this.end = new Phaser.Math.Vector2(center(data.to.x), center(data.to.y));
+    this.start = new Phaser.Math.Vector2(center(data.from.x), footY(data.from.y));
+    this.end = new Phaser.Math.Vector2(center(data.to.x), footY(data.to.y));
     this.goal = this.end;
 
     this.play(animKey(data.texture, "idle", "down"));

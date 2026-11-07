@@ -31,6 +31,18 @@ const VARIANTS: Record<string, { hair: string[]; shirt: string[] }> = {
     hair: ["9aa0a8", "888f97", "787f88", "666c74"], // 희끗한 머리
     shirt: ["8c5aa0", "6e447e"], // 자주
   },
+  "npc-d": {
+    hair: ["7b4a2e", "6a3f27", "5c3621", "4e2d1b"], // 적갈색
+    shirt: ["4a7aa8", "355a80"], // 청색
+  },
+  "npc-e": {
+    hair: ["3f2f44", "362839", "2e222f", "271c28"], // 짙은 보라
+    shirt: ["6f8d6a", "52694e"], // 올리브
+  },
+  "npc-f": {
+    hair: ["c4705c", "a85a4a", "8e4b3d", "753d31"], // 주황빛
+    shirt: ["e4d9bf", "b7ad95"], // 아이보리
+  },
 };
 
 const rgb = (hex: string) => [
