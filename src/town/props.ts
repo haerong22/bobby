@@ -263,9 +263,18 @@ export function computeProps(): PropPlacement[] {
 
   // ── 오솔길 가장자리 ────────────────────────────────────────────────
   // 길섶에 관목을 성글게 두면 길이 잔디에 묻히지 않는다.
+  //
+  // **길 방향과 직각인 칸에만 심는다.** 네 방향을 다 보면 길 끝과 꺾이는 자리에
+  // 관목이 들어앉아 입구를 마개처럼 막는다 — 보도에서 길로 내려서질 못한다.
   for (const key of onTrail) {
     const [tx, ty] = key.split(",").map(Number) as [number, number];
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+    const vertical = onTrail.has(`${tx},${ty - 1}`) || onTrail.has(`${tx},${ty + 1}`);
+    const horizontal = onTrail.has(`${tx - 1},${ty}`) || onTrail.has(`${tx + 1},${ty}`);
+    if (vertical === horizontal) continue; // 끝이거나 모퉁이
+    const sides = vertical
+      ? ([[-1, 0], [1, 0]] as const)
+      : ([[0, -1], [0, 1]] as const);
+    for (const [dx, dy] of sides) {
       if (onTrail.has(`${tx + dx},${ty + dy}`)) continue;
       if (noise((tx + dx) * 23, (ty + dy) * 29) < 0.86) continue;
       add("bush", tx + dx, ty + dy);
