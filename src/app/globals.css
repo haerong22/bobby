@@ -16,3 +16,345 @@ body {
 canvas {
   image-rendering: pixelated;
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 도서관 — 책과 책장 넘김 (src/components/sections/Book.tsx)
+ *
+ * 넘김이 진짜로 보이려면 세 가지가 **각도에 맞춰 같이 움직여야** 한다.
+ * 회전만 시키면 판때기가 돌아가는 것으로 보인다.
+ *
+ *   ① 돌아가는 면의 그늘 — 빛을 등질수록 어두워진다
+ *   ② 밑면에 지는 그림자 — 들린 종이가 아래쪽 면에 드리운다
+ *   ③ 잘린 가장자리의 빛 — 종이 두께가 빛을 받는다
+ *
+ * 그리고 **시간이 넉넉해야 한다.** 종이는 손가락보다 느리다. 0.8 초쯤이
+ * 넘기는 동작으로 읽히는 하한이고, 그보다 짧으면 깜빡임으로 보인다.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/*
+ * 펼친 두 면의 바탕.
+ *
+ * 단면도로 보면 밝기는 **바깥에서 안으로 어둡게 → 밝게 → 접지 앞에서 한 번 더
+ * 밝게 → 급격히 어둡게** 다. 접지 직전의 highlight 가 핵심이다 — 면이 골에서
+ * 솟아오르며 빛을 더 받는 자리고, 이게 없으면 가운데에 그냥 검은 띠를 그은
+ * 것처럼 보인다.
+ *
+ * **`:root` 에 두면 안 된다.** 안에 쓴 `var(--paper)` · `var(--ink)` 가 선언된
+ * 자리에서 풀리는데 `:root` 에는 그 값이 없어 통째로 무효가 된다. 증상이
+ * "면 바탕이 아예 사라짐" 이라 그라디언트 문법을 의심하게 된다.
+ */
+.book-cover {
+  --book-spread: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--ink) 20%, var(--paper)) 0%,
+    color-mix(in srgb, var(--ink) 7%, var(--paper)) 1.4%,
+    var(--paper) 5%,
+    var(--paper) 36%,
+    color-mix(in srgb, #fff 55%, var(--paper)) 44%,
+    color-mix(in srgb, var(--ink) 4%, var(--paper)) 46.6%,
+    color-mix(in srgb, var(--ink) 15%, var(--paper)) 48.4%,
+    color-mix(in srgb, var(--ink) 32%, var(--paper)) 49.5%,
+    color-mix(in srgb, var(--ink) 42%, var(--paper)) 50%,
+    color-mix(in srgb, var(--ink) 32%, var(--paper)) 50.5%,
+    color-mix(in srgb, var(--ink) 15%, var(--paper)) 51.6%,
+    color-mix(in srgb, var(--ink) 4%, var(--paper)) 53.4%,
+    color-mix(in srgb, #fff 55%, var(--paper)) 56%,
+    var(--paper) 64%,
+    var(--paper) 94.5%,
+    color-mix(in srgb, var(--ink) 7%, var(--paper)) 98.6%,
+    color-mix(in srgb, var(--ink) 20%, var(--paper)) 100%
+  );
+
+  /* 천의 짜임. 거의 안 보일 만큼만 — 보이면 무늬지 천이 아니다. */
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgb(255 255 255 / 0.014) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgb(0 0 0 / 0.02) 0 1px,
+      transparent 1px 3px
+    );
+}
+
+/*
+ * 좁은 화면에서는 **한 면짜리 책**이다. 단이 하나로 합쳐지는데 가운데 골이
+ * 남아 있으면 글자 한가운데를 세로로 파고든다.
+ */
+.book-pages {
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--ink) 17%, var(--paper)) 0%,
+    color-mix(in srgb, var(--ink) 5%, var(--paper)) 2%,
+    var(--paper) 7%,
+    var(--paper) 93%,
+    color-mix(in srgb, var(--ink) 5%, var(--paper)) 98%,
+    color-mix(in srgb, var(--ink) 17%, var(--paper)) 100%
+  );
+}
+
+/* 반 면만 쓸 때. 전체 너비로 깔고 한쪽만 보인다. */
+.book-half {
+  background-image: var(--book-spread);
+  background-size: 200% 100%;
+}
+
+.book-half-left {
+  background-position: left;
+}
+
+.book-half-right {
+  background-position: right;
+}
+
+@media (min-width: 40rem) {
+  .book-pages {
+    background-image: var(--book-spread);
+  }
+}
+
+/*
+ * 책배 — 쌓인 종이의 잘린 면.
+ *
+ * 가는 가로줄이 **낱장**이다. 민 그라디언트만 깔면 종이 묶음이 아니라 색 띠로
+ * 보인다. 바깥쪽(아래 장)이 가장 어둡다.
+ */
+.book-edge {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--ink) 26%, transparent) 0 1px,
+      transparent 1px 3px
+    ),
+    var(--edge-fade);
+}
+
+.book {
+  /*
+   * 넘김 한 번. 종이는 손가락보다 느리다.
+   *
+   * 다만 가속·감속 곡선 때문에 회전은 8 할쯤에서 사실상 끝난다. 1 초를 주면
+   * 끝의 0.2 초가 **멈춘 채로 입력만 잠긴** 시간이 되어 오히려 굼떠 보인다.
+   */
+  --leaf-ms: 820ms;
+  /*
+   * 들어 올릴 때 뜸을 들이고 넘어간 뒤 천천히 내려앉는다.
+   * **두 번째 제어점의 x 를 너무 당기면 안 된다** — 회전이 중반에 끝나 버려
+   * 뒤쪽 시간이 통째로 죽고, 길게 잡아 둔 보람 없이 짧게 느껴진다.
+   */
+  --leaf-ease: cubic-bezier(0.38, 0.01, 0.6, 1);
+  /*
+   * 너무 짧으면 들린 종이가 책보다 훨씬 커져 책 밖으로 달아나 보이고,
+   * 너무 길면 회전이 납작해져 종이가 접히는 게 아니라 가로로 줄어든다.
+   */
+  perspective: 3400px;
+}
+
+/* ── 돌아가는 종이 ───────────────────────────────────────────────────────── */
+
+.leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 3;
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.leaf-next {
+  left: 50%;
+  transform-origin: left center;
+  animation: leaf-next var(--leaf-ms) var(--leaf-ease) forwards;
+}
+
+.leaf-prev {
+  left: 0;
+  transform-origin: right center;
+  animation: leaf-prev var(--leaf-ms) var(--leaf-ease) forwards;
+}
+
+@keyframes leaf-next {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes leaf-prev {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+/*
+ * 종이 한 장의 양면.
+ *
+ * 뒷면에 `rotateY(180deg)` 를 미리 걸어 둔다. 부모가 180° 돌면 합이 360° 라
+ * 글자가 거울상이 되지 않고 똑바로 선다. `translateZ` 는 두 면이 정확히 같은
+ * 평면에 있을 때 생기는 깜빡임(z-fighting)을 막는다.
+ */
+.leaf-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0.06px);
+  box-shadow:
+    0 2px 10px rgb(60 46 28 / 0.22),
+    0 14px 40px rgb(60 46 28 / 0.26);
+}
+
+.leaf-face-back {
+  transform: rotateY(180deg) translateZ(0.06px);
+}
+
+/* ── ① 돌아가는 면의 그늘 ───────────────────────────────────────────────── */
+
+.leaf-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* 자유변(접지 반대쪽)이 가장 어둡고, 그 끝선이 빛을 받는다 — ③ */
+.leaf-sheen-r {
+  background: linear-gradient(
+    to right,
+    rgb(38 30 18 / 0.04),
+    rgb(38 30 18 / 0.46)
+  );
+  box-shadow: inset -2px 0 0 rgb(255 255 255 / 0.45);
+}
+
+.leaf-sheen-l {
+  background: linear-gradient(
+    to left,
+    rgb(38 30 18 / 0.04),
+    rgb(38 30 18 / 0.46)
+  );
+  box-shadow: inset 2px 0 0 rgb(255 255 255 / 0.45);
+}
+
+/* 앞면은 빛을 등지며 어두워지고, 뒷면은 내려앉으며 밝아진다. */
+.leaf-face > .leaf-sheen {
+  animation: leaf-sheen-front var(--leaf-ms) var(--leaf-ease) forwards;
+}
+
+.leaf-face-back > .leaf-sheen {
+  animation: leaf-sheen-back var(--leaf-ms) var(--leaf-ease) forwards;
+}
+
+@keyframes leaf-sheen-front {
+  from {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes leaf-sheen-back {
+  from {
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ── ② 밑면에 지는 그림자 ───────────────────────────────────────────────── */
+
+.leaf-cast {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.leaf-cast-l {
+  left: 0;
+  background: linear-gradient(
+    to left,
+    rgb(44 34 20 / 0.5),
+    rgb(44 34 20 / 0.12) 38%,
+    transparent 72%
+  );
+}
+
+.leaf-cast-r {
+  left: 50%;
+  background: linear-gradient(
+    to right,
+    rgb(44 34 20 / 0.5),
+    rgb(44 34 20 / 0.12) 38%,
+    transparent 72%
+  );
+}
+
+/* 종이가 덮으러 가는 면 — 다가올수록 짙어졌다 내려앉으며 사라진다. */
+.leaf-cast-in {
+  animation: leaf-cast-in var(--leaf-ms) var(--leaf-ease) forwards;
+}
+
+/* 종이가 떠난 면 — 들리는 동안 남아 있던 그림자가 걷힌다. */
+.leaf-cast-out {
+  animation: leaf-cast-out var(--leaf-ms) var(--leaf-ease) forwards;
+}
+
+@keyframes leaf-cast-in {
+  from {
+    opacity: 0;
+  }
+  55% {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes leaf-cast-out {
+  from {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/*
+ * 넘김을 끈다. 내용은 그대로 바뀌므로 읽는 데는 지장이 없고, 종이를 지워도
+ * 타이머가 상태를 되돌리므로 다음 넘김이 막히지 않는다.
+ *
+ * 좁은 화면에서도 끈다 — 거기서는 **한 면짜리 책**이라 반쪽이 돌아가면
+ * 페이지의 절반만 뜯겨 나가는 꼴이 된다.
+ */
+@media (prefers-reduced-motion: reduce), (max-width: 39.99rem) {
+  .leaf,
+  .leaf-held,
+  .leaf-cast {
+    display: none;
+  }
+}

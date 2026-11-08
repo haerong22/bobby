@@ -68,6 +68,28 @@ export interface SkillGroup {
   items: string[];
 }
 
+/**
+ * 도서관에 꽂히는 글 한 편.
+ *
+ * 책을 넘기며 읽는 형태라 **한 편이 펼침면 하나**에 들어간다. `body` 가 너무
+ * 길면 한 면을 넘겨 버리므로 서너 문단에서 끊고, 길어질 내용은 `url` 로 원문을
+ * 건다 — 도서관은 전문을 싣는 곳이 아니라 꽂아 두는 곳이다.
+ */
+export interface Post {
+  title: string;
+  /** "2026-03" 또는 "2026-03-14" */
+  date: string;
+  /** 기술 · 기록처럼 글의 갈래 */
+  category: string;
+  /** 차례에 실리는 한 줄 */
+  summary: string;
+  /** 문단 단위로 나눠 적는다. */
+  body: string[];
+  tags: string[];
+  /** 원문(블로그·깃허브) 주소. 없으면 링크를 걸지 않는다. */
+  url: string | null;
+}
+
 export interface ContactLink {
   label: string;
   value: string;

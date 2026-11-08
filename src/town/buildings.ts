@@ -88,7 +88,8 @@ export const BUILDINGS: readonly Building[] = [
   {
     id: "library",
     label: "도서관",
-    route: "/skills",
+    // 도서관은 기술 스택 목록이 아니라 **글을 꽂아 두는 곳**이다 (posts.json).
+    route: "/posts",
     x: 12,
     y: 18,
     w: 7,
