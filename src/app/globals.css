@@ -9,6 +9,14 @@ body {
   margin: 0;
   background: #0f1117;
   color: #f4f6fb;
+}
+
+/*
+ * 게임 화면에서만 스크롤을 잠근다.
+ * body 에 걸어 두면 /about 같은 정적 페이지가 **스크롤되지 않는다** — 내용이
+ * 화면보다 길면 아래가 잘린 채 읽을 방법이 없다.
+ */
+body:has(.town-stage) {
   overflow: hidden;
 }
 

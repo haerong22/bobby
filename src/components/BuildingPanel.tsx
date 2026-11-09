@@ -3,6 +3,13 @@
 import { useEffect, useRef } from "react";
 
 import SectionContent from "./sections";
+import Document, {
+  AIRMAIL,
+  PANEL_EDGE,
+  PANEL_FILL,
+  WIDE,
+} from "./sections/Document";
+import { SECTION_THEMES, themeVars } from "./sections/theme";
 import type { Building } from "@/town/buildings";
 
 type Props = {
@@ -11,11 +18,19 @@ type Props = {
 };
 
 /**
- * 건물 안에서 보이는 내용. Phase 4 에서 src/content 의 JSON 을 받아
- * 건물별 패널로 갈라진다. 지금은 뼈대와 닫기 동작만 있다.
+ * 건물 안에서 보이는 내용.
+ *
+ * **모달은 테마를 입힌 카드가 아니라 그 건물이 건네주는 문서다.** 문서의 겉모습
+ * (테두리·여백선·직인·우표…)은 전부 `Document` 가 그리고, 정적 페이지도 같은
+ * 것을 쓴다. 여기 남는 것은 모달 노릇뿐이다 — 어둡게 덮기, 포커스, Esc, 스크롤.
+ *
+ * 패널은 여백을 주지 않는다. `Document` 가 자기 여백을 가지므로, 카드 상단 띠나
+ * 바인더 기둥처럼 **종이 끝까지 가야 하는 장치**가 여백에 잘리지 않는다.
  */
+
 export default function BuildingPanel({ building, onClose }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const theme = SECTION_THEMES[building.id];
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -29,8 +44,14 @@ export default function BuildingPanel({ building, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const envelope = building.id === "post";
+  // 책은 세로로도 크다. 서류와 같은 높이로 자르면 노트북 화면에서 표지 아래가
+  // 잘려 책이 끝나지 않은 것처럼 보인다.
+  const tall = WIDE[building.id];
+
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
       onClick={onClose}
     >
@@ -38,30 +59,49 @@ export default function BuildingPanel({ building, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={building.label}
-        className="max-h-[80dvh] w-full max-w-xl overflow-y-auto rounded-lg border border-neutral-700 bg-neutral-900 p-6 text-neutral-100 shadow-xl"
+        style={{
+          ...themeVars(theme),
+          ...(envelope ? { background: AIRMAIL, padding: 6 } : null),
+        }}
+        className={`w-full overflow-hidden shadow-2xl ${
+          tall ? "max-h-[93dvh] max-w-6xl" : "max-h-[85dvh] max-w-xl"
+        } ${PANEL_EDGE[building.id]} ${
+          theme.serif ? "font-serif" : "font-sans"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold">{building.label}</h2>
-            <p className="mt-1 text-xs text-neutral-500">{building.route}</p>
-          </div>
-          <button
-            ref={closeRef}
-            type="button"
-            onClick={onClose}
-            className="rounded border border-neutral-700 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-800"
+        <div
+          style={{ background: PANEL_FILL[building.id] ?? "var(--paper)" }}
+          className={`overflow-y-auto overscroll-contain text-[var(--ink)] ${
+            tall ? "max-h-[93dvh]" : "max-h-[calc(85dvh-12px)]"
+          }`}
+        >
+          <Document
+            id={building.id}
+            label={building.label}
+            level={2}
+            action={
+              <button
+                ref={closeRef}
+                type="button"
+                onClick={onClose}
+                className="shrink-0 border border-[var(--rule)] bg-[var(--paper)] px-3 py-1 text-sm text-[var(--muted)] hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              >
+                닫기
+              </button>
+            }
+            foot={
+              <>
+                <kbd className="border border-[var(--rule)] px-1.5 py-0.5">
+                  Esc
+                </kbd>{" "}
+                또는 뒤로가기로 닫힙니다.
+              </>
+            }
           >
-            닫기
-          </button>
-        </header>
-
-        <SectionContent id={building.id} />
-
-        <footer className="mt-8 border-t border-neutral-800 pt-4 text-xs text-neutral-500">
-          <kbd className="rounded bg-neutral-800 px-1.5 py-0.5">Esc</kbd> 또는
-          뒤로가기로 닫힙니다.
-        </footer>
+            <SectionContent id={building.id} />
+          </Document>
+        </div>
       </div>
     </div>
   );

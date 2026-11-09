@@ -32,35 +32,55 @@ export default function NewsSection() {
     };
   }, []);
 
-  if (error) return <p className="text-sm text-neutral-500">{error}</p>;
-  if (!items) return <p className="text-sm text-neutral-500">신문을 받아오는 중...</p>;
+  if (error) return <p className="text-sm text-[var(--muted)]">{error}</p>;
+  if (!items) return <p className="text-sm text-[var(--muted)]">신문을 받아오는 중…</p>;
   if (items.length === 0) {
-    return <p className="text-sm text-neutral-500">오늘은 실린 기사가 없습니다.</p>;
+    return <p className="text-sm text-[var(--muted)]">오늘은 실린 기사가 없습니다.</p>;
   }
 
+  // 1면처럼 — 머리기사 하나를 크게 세우고 나머지는 두 단으로 흘린다.
+  const [lead, ...rest] = items;
   return (
-    <ol className="space-y-4">
-      {items.map((item, index) => (
-        <li key={item.url} className="flex gap-3">
-          <span className="w-5 shrink-0 pt-0.5 text-right font-mono text-xs text-neutral-600">
-            {index + 1}
-          </span>
-          <div className="min-w-0">
+    <div>
+      {lead && (
+        <article className="border-b border-[var(--rule)] pb-4">
+          <a
+            href={lead.url}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-xl leading-snug font-semibold underline-offset-4 hover:underline"
+          >
+            {lead.title}
+          </a>
+          <p className="mt-1.5 text-xs text-[var(--muted)]">
+            {lead.source}
+            {lead.points !== null && ` · ${lead.points}점`}
+          </p>
+        </article>
+      )}
+
+      {/* 단 사이 세로 괘선 — 신문 조판의 표식이다. */}
+      <ol className="mt-4 gap-x-8 sm:columns-2 sm:[column-rule:1px_solid_var(--rule)]">
+        {rest.map((item) => (
+          <li
+            key={item.url}
+            className="mb-3 break-inside-avoid border-b border-[var(--rule)] pb-3"
+          >
             <a
               href={item.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="text-sm leading-snug text-neutral-100 underline-offset-2 hover:underline"
+              className="leading-snug underline-offset-2 hover:underline"
             >
               {item.title}
             </a>
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-[var(--muted)]">
               {item.source}
               {item.points !== null && ` · ${item.points}점`}
             </p>
-          </div>
-        </li>
-      ))}
-    </ol>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }

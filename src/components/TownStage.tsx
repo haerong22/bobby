@@ -22,7 +22,7 @@ const GameCanvas = dynamic(() => import("./GameCanvas"), {
   ssr: false,
   loading: () => (
     <div className="grid h-dvh w-full place-items-center bg-[#0f1117] text-sm text-neutral-500">
-      마을을 불러오는 중...
+      마을을 불러오는 중…
     </div>
   ),
 });
@@ -91,7 +91,7 @@ export default function TownStage() {
   const canInteract = nearId !== null || nearNpc !== null;
 
   return (
-    <main>
+    <main className="town-stage">
       <GameCanvas />
       <ExploreProgress />
 
