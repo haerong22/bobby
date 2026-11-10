@@ -220,10 +220,10 @@ function Page({
   const left = leftPageOf(index);
 
   return (
-    // 한 면이 가로보다 세로로 길어야 책면으로 읽힌다. 모달 폭(6xl)에서
-    // 한 면이 560px 쯤이므로 30rem 이 그 비율에 맞고, 표지·쪽수를 더해도
-    // 노트북 화면(800px)에 들어온다.
-    <div className="flex min-h-[23rem] flex-col py-6 sm:min-h-[30rem] sm:py-8">
+    // 한 면이 가로보다 지나치게 납작하면 책면으로 안 읽힌다. 모달 폭(7xl)에서
+    // 한 면이 615px 쯤이므로 34rem 이 그 비율에 맞고, 표지·쪽수를 더해도
+    // 노트북 화면(800px)의 93dvh 안에 들어온다.
+    <div className="flex min-h-[23rem] flex-col py-6 sm:min-h-[34rem] sm:py-8">
       <div
         className={`flex items-baseline justify-between border-b border-[var(--rule)] pb-2 text-xs text-[var(--muted)] ${BOOK_INSET}`}
       >

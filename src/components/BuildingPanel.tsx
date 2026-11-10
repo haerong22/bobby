@@ -64,7 +64,7 @@ export default function BuildingPanel({ building, onClose }: Props) {
           ...(envelope ? { background: AIRMAIL, padding: 6 } : null),
         }}
         className={`w-full overflow-hidden shadow-2xl ${
-          tall ? "max-h-[93dvh] max-w-6xl" : "max-h-[85dvh] max-w-xl"
+          tall ? "max-h-[93dvh] max-w-7xl" : "max-h-[90dvh] max-w-3xl"
         } ${PANEL_EDGE[building.id]} ${
           theme.serif ? "font-serif" : "font-sans"
         }`}
@@ -73,7 +73,7 @@ export default function BuildingPanel({ building, onClose }: Props) {
         <div
           style={{ background: PANEL_FILL[building.id] ?? "var(--paper)" }}
           className={`overflow-y-auto overscroll-contain text-[var(--ink)] ${
-            tall ? "max-h-[93dvh]" : "max-h-[calc(85dvh-12px)]"
+            tall ? "max-h-[93dvh]" : "max-h-[calc(90dvh-12px)]"
           }`}
         >
           <Document
