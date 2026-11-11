@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import AssetCredits from "@/components/AssetCredits";
 import SectionContent from "@/components/sections";
 import Document, { AIRMAIL, WIDE } from "@/components/sections/Document";
 import { SECTION_THEMES, themeVars } from "@/components/sections/theme";
@@ -88,28 +89,7 @@ export default async function SectionPage({ params }: PageProps<"/[section]">) {
             </ul>
           </nav>
 
-          {/* 에셋 출처. 둘 다 CC-BY 라 표기가 의무다. 임의로 지우면 안 된다. */}
-          <footer className="mt-8 text-xs leading-relaxed text-[var(--muted)]">
-            게임 아트{" "}
-            <a
-              href="https://aquumgifts.itch.io"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="underline underline-offset-2"
-            >
-              &ldquo;Cozy Town Lite&rdquo; by Spaceyyy
-            </a>{" "}
-            ·{" "}
-            <a
-              href="https://aquumgifts.itch.io"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="underline underline-offset-2"
-            >
-              &ldquo;Cozy Farm Village Lite&rdquo; by Bramble &amp; Byte
-            </a>{" "}
-            (CC-BY 4.0)
-          </footer>
+          <AssetCredits />
         </div>
       </div>
     </main>

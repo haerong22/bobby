@@ -27,6 +27,8 @@ interface HnHit {
 function toItem(hit: HnHit): NewsItem | null {
   if (!hit.title) return null;
   return {
+    // 안쪽 면(/api/news/[id])을 여는 열쇠. 버리면 상세로 갈 길이 없다.
+    id: hit.objectID,
     title: hit.title,
     // 외부 링크가 없는 글(Ask HN 등)은 HN 토론 페이지로 보낸다.
     url: hit.url ?? `https://news.ycombinator.com/item?id=${hit.objectID}`,

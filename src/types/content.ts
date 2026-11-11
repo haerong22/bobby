@@ -99,9 +99,43 @@ export interface ContactLink {
 
 /** 신문사에서 보여줄 외부 기술 뉴스. JSON 이 아니라 /api/news 에서 온다. */
 export interface NewsItem {
+  /** HN objectID. 안쪽 면(상세)을 여는 열쇠다. */
+  id: string;
   title: string;
   url: string;
   source: string;
   points: number | null;
   publishedAt: string;
+}
+
+/** 기사에 달린 독자 반응 한 줄. */
+export interface NewsComment {
+  id: string;
+  author: string;
+  /** **글자만 남긴 것.** 원본은 HTML 이라 그대로 그리면 XSS 다. */
+  text: string;
+  publishedAt: string;
+}
+
+/**
+ * 신문 안쪽 면.
+ *
+ * **기사 본문은 싣지 않는다.** 남의 글이라 전재하면 저작권 문제고, 사이트마다
+ * 봇 차단·구조가 제각각이라 깨진다. 대신 HN 이 공개 API 로 내주는 자기
+ * 데이터(점수·작성자·토론)를 싣고 본문은 원문 링크로 넘긴다.
+ */
+export interface NewsStory {
+  id: string;
+  title: string;
+  /** 원문 주소. Ask HN 처럼 바깥 글이 없으면 null. */
+  url: string | null;
+  author: string | null;
+  points: number | null;
+  publishedAt: string;
+  /** HN 토론 주소 */
+  discussion: string;
+  /** 상위 몇 개만 싣는다 — 통째로 옮기면 그것도 재배포에 가깝다. */
+  comments: NewsComment[];
+  /** 달린 반응 전체 수 */
+  commentCount: number;
 }

@@ -298,10 +298,11 @@ function Diploma({ label, level, action, foot, children }: Inner) {
 function FrontPage({ label, level, action, foot, children }: Inner) {
   return (
     <div className={PAD}>
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-xs text-[var(--muted)]">제1면</p>
-        {action}
-      </div>
+      {/*
+        면 이름(제1면 · 안쪽 면)은 **내용 쪽이 쓴다.** 어느 면을 펼쳤는지는
+        `NewsSection` 만 알고, 문서 틀은 종이만 그린다.
+      */}
+      <div className="flex min-h-7 items-start justify-end gap-4">{action}</div>
 
       <div className="mt-2 border-y-2 border-[var(--ink)] py-2 text-center">
         <Title
@@ -312,8 +313,8 @@ function FrontPage({ label, level, action, foot, children }: Inner) {
         </Title>
       </div>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-[var(--ink)] py-1 text-xs text-[var(--muted)]">
-        <span>Hacker News · GeekNews</span>
-        <span>매시간 갱신</span>
+        <span>Hacker News</span>
+        <span>30분마다 갱신</span>
       </div>
 
       <div className="mt-5">{children}</div>
