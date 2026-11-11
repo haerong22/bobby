@@ -97,6 +97,23 @@ export interface ContactLink {
   url: string | null;
 }
 
+/**
+ * 신문의 제호.
+ *
+ * **건물 간판(`신문사`)과 다른 것이다.** 간판은 마을에서 건물을 가리키는
+ * 이름이고, 제호는 그 신문의 이름이다 — 간판에 "신문사" 라고 쓰여 있다고
+ * 1면에도 "신문사" 라고 찍혀 있지는 않다.
+ */
+export interface PressMasthead {
+  name: string;
+  /** 제호 아래 한 줄. 뉴욕타임스의 "All the News That's Fit to Print" 자리. */
+  motto: string;
+  /** 발행 정보 왼쪽 칸 */
+  volume: string;
+  /** 발행 정보 가운데 칸 */
+  place: string;
+}
+
 /** 신문사에서 보여줄 외부 기술 뉴스. JSON 이 아니라 /api/news 에서 온다. */
 export interface NewsItem {
   /** HN objectID. 안쪽 면(상세)을 여는 열쇠다. */

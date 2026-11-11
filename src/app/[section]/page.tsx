@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import AssetCredits from "@/components/AssetCredits";
 import SectionContent from "@/components/sections";
-import Document, { AIRMAIL, WIDE } from "@/components/sections/Document";
+import Document, { AIRMAIL, press, WIDE } from "@/components/sections/Document";
 import { SECTION_THEMES, themeVars } from "@/components/sections/theme";
 import { BUILDINGS } from "@/town/buildings";
 
@@ -25,7 +25,9 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/[section]">) {
   const { section } = await params;
   const building = findBuilding(section);
-  return building ? { title: building.label } : {};
+  if (!building) return {};
+  // 신문사만 탭 제목이 간판이 아니라 제호다 — 1면에 찍힌 이름과 맞춘다.
+  return { title: building.id === "press" ? press.name : building.label };
 }
 
 export default async function SectionPage({ params }: PageProps<"/[section]">) {

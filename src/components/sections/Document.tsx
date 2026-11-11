@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 
+import { masthead } from "@/app/fonts";
+import pressData from "@/content/press.json";
 import type { BuildingId } from "@/town/buildings";
+import type { PressMasthead } from "@/types/content";
 
 import { COVER, COVER_INK, COVER_LINE, COVER_MUTED } from "./paper";
 
@@ -26,6 +29,9 @@ import { COVER, COVER_INK, COVER_LINE, COVER_MUTED } from "./paper";
  *
  * `"use client"` 를 붙이지 않는다 — 정적 페이지에서 서버 렌더되어야 한다.
  */
+
+/** 신문의 제호. 간판(`신문사`)과 다른 것이라 건물 데이터가 아니라 내용이다. */
+export const press = pressData as PressMasthead;
 
 type Level = 1 | 2;
 
@@ -292,10 +298,16 @@ function Diploma({ label, level, action, foot, children }: Inner) {
 /**
  * 신문사 — 1면.
  *
- * 제호를 굵은 선 사이에 세우고, 아래에 발행 레일을 깐다. 본문 아래는 마감선으로
- * 닫는다 — 신문 지면은 아래가 열려 있지 않다.
+ * 실제 조간 신문의 제호 블록 순서를 그대로 따른다.
+ *
+ *   가는 선 → 제호(고딕체) → 모토 → 가는 선 → 발행 정보 세 칸 → 굵은 선
+ *
+ * **제호는 건물 이름이 아니다.** 간판은 "신문사" 지만 1면에 찍히는 것은 그
+ * 신문의 이름이라, `label` 이 아니라 `press.json` 을 쓴다.
+ *
+ * 본문 아래는 마감선으로 닫는다 — 신문 지면은 아래가 열려 있지 않다.
  */
-function FrontPage({ label, level, action, foot, children }: Inner) {
+function FrontPage({ level, action, foot, children }: Inner) {
   return (
     <div className={PAD}>
       {/*
@@ -304,17 +316,21 @@ function FrontPage({ label, level, action, foot, children }: Inner) {
       */}
       <div className="flex min-h-7 items-start justify-end gap-4">{action}</div>
 
-      <div className="mt-2 border-y-2 border-[var(--ink)] py-2 text-center">
+      <div className="border-t border-[var(--ink)] pt-3 text-center">
         <Title
           level={level}
-          className="text-4xl leading-none font-black tracking-tight text-balance"
+          className={`${masthead.className} text-4xl leading-[1.1] text-balance sm:text-5xl`}
         >
-          {label}
+          {press.name}
         </Title>
+        <p className="mt-2 text-xs text-[var(--muted)]">{press.motto}</p>
       </div>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-[var(--ink)] py-1 text-xs text-[var(--muted)]">
-        <span>Hacker News</span>
-        <span>30분마다 갱신</span>
+
+      {/* 발행 정보. 신문이 날짜·판·값을 적는 자리다. */}
+      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-y border-[var(--ink)] py-1 text-[0.7rem] text-[var(--muted)]">
+        <span className="tabular-nums">{press.volume}</span>
+        <span className="hidden sm:inline">{press.place}</span>
+        <span>Hacker News · 30분마다 갱신</span>
       </div>
 
       <div className="mt-5">{children}</div>
