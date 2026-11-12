@@ -116,11 +116,16 @@ export interface PressMasthead {
 
 /** 신문사에서 보여줄 외부 기술 뉴스. JSON 이 아니라 /api/news 에서 온다. */
 export interface NewsItem {
-  /** HN objectID. 안쪽 면(상세)을 여는 열쇠다. */
+  /**
+   * 안쪽 면을 여는 열쇠. `hn-50450488` · `gn-37159` 처럼 **출처 접두사**가 붙는다.
+   * 출처마다 번호 체계가 달라서, 접두사가 없으면 어느 쪽 글인지 알 길이 없다.
+   */
   id: string;
   title: string;
   url: string;
+  /** "Hacker News" 또는 "GeekNews" */
   source: string;
+  /** GeekNews 는 피드에 점수가 없어 null 이다. */
   points: number | null;
   publishedAt: string;
 }
@@ -138,19 +143,26 @@ export interface NewsComment {
  * 신문 안쪽 면.
  *
  * **기사 본문은 싣지 않는다.** 남의 글이라 전재하면 저작권 문제고, 사이트마다
- * 봇 차단·구조가 제각각이라 깨진다. 대신 HN 이 공개 API 로 내주는 자기
- * 데이터(점수·작성자·토론)를 싣고 본문은 원문 링크로 넘긴다.
+ * 봇 차단·구조가 제각각이라 깨진다. 대신 각 사이트가 스스로 내주는 것만 싣고
+ * 본문은 링크로 넘긴다.
+ *
+ * **출처마다 실리는 것이 다르다.** HN 은 공개 API 로 독자 반응을 주고,
+ * GeekNews 는 토론 API 가 없는 대신 투고자가 쓴 요약을 피드에 담아 준다.
  */
 export interface NewsStory {
   id: string;
+  /** "Hacker News" 또는 "GeekNews" */
+  source: string;
   title: string;
-  /** 원문 주소. Ask HN 처럼 바깥 글이 없으면 null. */
+  /** 바깥 원문 주소. Ask HN 처럼 바깥 글이 없으면 null. */
   url: string | null;
   author: string | null;
   points: number | null;
   publishedAt: string;
-  /** HN 토론 주소 */
+  /** 토론이 열려 있는 주소. GeekNews 는 토픽 페이지가 곧 토론이라 `url` 과 같다. */
   discussion: string;
+  /** 피드가 주는 요약. HN 쪽은 없다. */
+  summary: string | null;
   /** 상위 몇 개만 싣는다 — 통째로 옮기면 그것도 재배포에 가깝다. */
   comments: NewsComment[];
   /** 달린 반응 전체 수 */

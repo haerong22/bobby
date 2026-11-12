@@ -40,7 +40,7 @@ export default function NewsStoryFace({
       </h2>
 
       <p className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[var(--rule)] pb-3 text-xs text-[var(--muted)]">
-        <span>Hacker News</span>
+        <span>{story.source}</span>
         {story.author && <span>{story.author}</span>}
         {story.points !== null && (
           <span className="tabular-nums">{story.points}점</span>
@@ -48,6 +48,11 @@ export default function NewsStoryFace({
         <span className="tabular-nums">{formatDay(story.publishedAt)}</span>
       </p>
 
+      {/*
+        **링크를 두 번 걸지 않는다.** GeekNews 는 토픽 페이지가 곧 토론이라
+        원문과 토론 주소가 같다 — 그대로 두면 같은 데로 가는 링크가 나란히 둘
+        붙는다.
+      */}
       <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         {story.url && (
           <a
@@ -56,18 +61,31 @@ export default function NewsStoryFace({
             rel="noreferrer noopener"
             className="text-[var(--accent)] underline underline-offset-2"
           >
-            원문 보기
+            {story.url === story.discussion
+              ? `${story.source} 에서 보기`
+              : "원문 보기"}
           </a>
         )}
-        <a
-          href={story.discussion}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="text-[var(--accent)] underline underline-offset-2"
-        >
-          토론 전체 보기
-        </a>
+        {story.url !== story.discussion && (
+          <a
+            href={story.discussion}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-[var(--accent)] underline underline-offset-2"
+          >
+            토론 전체 보기
+          </a>
+        )}
       </div>
+
+      {/* 피드가 요약을 주는 쪽(GeekNews). 투고자가 직접 쓴 글이다. */}
+      {story.summary && (
+        <div className="mt-6 border-l-2 border-[var(--rule)] pl-4">
+          <p className="leading-relaxed break-words whitespace-pre-line">
+            {story.summary}
+          </p>
+        </div>
+      )}
 
       {story.comments.length > 0 && (
         <section className="mt-8">
@@ -89,7 +107,11 @@ export default function NewsStoryFace({
                     {formatDay(comment.publishedAt)}
                   </span>
                 </p>
-                <p className="mt-1.5 leading-relaxed whitespace-pre-line">
+                {/*
+                  댓글에는 끊을 자리가 없는 긴 주소가 섞여 들어온다. 안 끊으면
+                  단 경계를 넘어 **옆 단 글자 위에 겹쳐 찍힌다.**
+                */}
+                <p className="mt-1.5 leading-relaxed break-words whitespace-pre-line">
                   {comment.text}
                 </p>
               </li>

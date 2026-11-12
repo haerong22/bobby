@@ -330,7 +330,7 @@ function FrontPage({ level, action, foot, children }: Inner) {
       <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-y border-[var(--ink)] py-1 text-[0.7rem] text-[var(--muted)]">
         <span className="tabular-nums">{press.volume}</span>
         <span className="hidden sm:inline">{press.place}</span>
-        <span>Hacker News · 30분마다 갱신</span>
+        <span>Hacker News · GeekNews</span>
       </div>
 
       <div className="mt-5">{children}</div>
