@@ -52,10 +52,24 @@ export default function NpcDialogue({ name, lines, onClose }: Props) {
     <div
       role="dialog"
       aria-label={`${name} 와의 대화`}
-      className="fixed inset-x-0 bottom-0 z-50 p-4"
-      onClick={advance}
+      /*
+        조작 버튼과 같은 이유로 `bottom-0` 에 붙이지 않는다 — 고정 위치는
+        레이아웃 뷰포트 기준이라 모바일 브라우저의 주소창·탭바 뒤로 들어간다.
+        `h-svh` 는 그 UI 가 떠 있을 때의 높이라 바닥이 늘 보이는 영역 안이다.
+      */
+      className="pointer-events-none fixed inset-x-0 top-0 z-50 flex h-svh items-end p-4"
+      style={{
+        paddingBottom: "max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem))",
+      }}
     >
-      <div className="mx-auto max-w-2xl rounded-lg border border-neutral-700 bg-neutral-900/95 p-5 shadow-xl">
+      {/*
+        넘기기는 **대화 상자 자체**가 받는다. 바깥 겹까지 받게 하면 화면
+        전체가 클릭 판이 되어 좌상단 "텍스트로 보기" 같은 것이 가려진다.
+      */}
+      <div
+        className="pointer-events-auto mx-auto w-full max-w-2xl rounded-lg border border-neutral-700 bg-neutral-900/95 p-5 shadow-xl"
+        onClick={advance}
+      >
         <p className="text-xs font-semibold text-amber-300">{name}</p>
         <p className="mt-2 min-h-12 text-sm leading-relaxed text-neutral-100">
           {lines[index]}

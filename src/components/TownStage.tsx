@@ -9,7 +9,7 @@ import DialogueBox from "./DialogueBox";
 import NpcDialogue from "./NpcDialogue";
 import ExploreProgress from "./ExploreProgress";
 import TouchControls from "./TouchControls";
-import { useCoarsePointer } from "./useCoarsePointer";
+import { useTouchInput } from "./useTouchInput";
 import type { BuildingId } from "@/town/buildings";
 import { buildingById } from "@/town/buildings";
 import { EventBus } from "@/town/EventBus";
@@ -34,7 +34,7 @@ export default function TownStage() {
   const [openId, setOpenId] = useState<BuildingId | null>(null);
   const [nearNpc, setNearNpc] = useState<string | null>(null);
   const [talk, setTalk] = useState<Talk | null>(null);
-  const touch = useCoarsePointer();
+  const touch = useTouchInput();
 
   useEffect(() => {
     const offNear = EventBus.on("door:near", ({ id }) => setNearId(id));
